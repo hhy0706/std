@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    // 元数据不具有响应式不要操作元数据。
+    const bucket = new WeakMap();
+  const data = { foo: 1, bar: 22 }
+    let activeEffect;
+    const effectStack =  [];
+    const jobQueue = new Set();
+    let isFlushing = false;
+    const p  = Promise.resolve();
+
+    function flushJob(){
+      if(isFlushing) return;
+      isFlushing = true;
+      p.then(()=>{
+        jobQueue.forEach(job => job())
+      }).finally(()=>{
+        isFlushing = false;
+      })
+    }
+    // function effect(fn){
+    //   activeEffect = fn;
+    //   fn();
+    // }
+    function effect(fn,options = {}){
+       const effectFn =  () =>{
+        cleanup(effectFn)
+         activeEffect = effectFn;
+         effectStack.push(effectFn)
+         const res = fn();
+           effectStack.pop()
+           activeEffect = effectStack[effectStack.length-1]
+          return res;
+      }
+      effectFn.deps = [];
+      effectFn.options = options
+      if(!options.lazy){
+        effectFn();
+      }
+      return effectFn;
+    }
+    function cleanup(effectFn){
+      for(let i = 0;i < effectFn.deps.length;i++){
+        const deps = effectFn.deps[i];
+        deps.delete(effectFn)
+      }
+      effectFn.deps.length = 0;
+    }
+   function track(target,key){
+       if(!activeEffect) return;
+        let depsMap  = bucket.get(target);
+        if(!depsMap){
+          bucket.set(target,depsMap = new Map())
+        }
+        let deps = depsMap.get(key);
+
+        if(!deps){
+          depsMap.set(key,deps = new Set())
+        }
+        deps.add(activeEffect);
+        activeEffect.deps.push(deps);
+   }
+    //  document.body.innerText = data.text;
+     function trigger(target,key){
+      console.log(key)
+       const depsMap = bucket.get(target);
+        if(!depsMap) return;
+        const effects  = depsMap.get(key);
+        const effectsToRun = new Set();
+        effects&&effects.forEach(effectFn =>{
+          if(effectFn!==activeEffect){
+            effectsToRun.add(effectFn);
+          }
+        })
+       effectsToRun.forEach(fn => {
+          if(fn.options.scheduler){
+            fn.options.scheduler(fn) 
+          } else{
+            
+             fn()
+          } 
+          
+          
+       });
+       
+     
+     }
+     const obj = new Proxy(data,{
+      get(target,key){
+
+        track(target,key)
+        return Reflect.get(target,key);
+      },
+      set(target,key,value,receiver){
+        
+        target[key] = value
+        trigger(target,key)
+        // Reflect.set(target, key, value, receiver)
+        // return Reflect.set(target, key, value, receiver);
+      }
+     })
+     function traverse(value,set = new Set()){
+      if(typeof value != "object" || value ===null || set.has(value) ) return;
+      set.add(value);
+      for(let key in value){
+        traverse(value[key],set)
+      }
+      return value
+     }
+     function watch(source,cb,options = {}){
+      let getter;
+      if(typeof source =='function'){
+        getter = source
+      }else {
+        getter = () => traverse(source)
+      }
+      let cleanup;
+      function onInvalidate(fn){
+        cleanup = fn;
+      }
+      let oldValue,newValue;
+         const job = () => {
+          newValue = effectFn();
+          if(cleanup){
+            cleanup()
+          }
+          cb(newValue,oldValue,onInvalidate)
+          oldValue = newValue
+      }
+    const effectFn =  effect(() => getter(),{
+        lazy:true,
+        scheduler:() => {
+          if(options.flush === 'post'){
+            const p = Promise.resolve()
+            p.then(job)
+          }else {
+            job()
+          }
+        }
+      })
+      if(options.immediate){
+        job()
+      }else{
+        oldValue  = effectFn();
+      }
+      
+     }
+     watch(obj,(a,b)=>{
+      console.log(a,b,'数据改变了')
+     },{
+      flush:'post'
+     })
+    //   watch(()=>obj.bar,(a,b)=>{
+    //   console.log(a,b,'数据改变了')
+    //  })
+   
+     obj.foo = 23; 
+    console.log('foo',obj.foo)
+    console.log('bar',obj.bar)
+//     effect(function effectFn1() {
+//       console.log(obj.foo)
+//  },{
+//   scheduler(fn){
+
+//     jobQueue.add(fn)
+
+//     flushJob()
+//   }
+//  })
+  
+
+  </script>
+</body>
+</html>

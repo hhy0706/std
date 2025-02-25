@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+
+
+
+
+
+  <h2>inline 行级水平垂直居中</h2>
+
+  <style>
+    .box1 {
+      width: 200px;
+      height: 200px;
+      background-color: red;
+      text-align: center;
+      line-height: 200px;
+    }
+  </style>
+
+  <div class="box1">
+    <span>水平垂直居中</span>
+  </div>
+  <br>
+
+  <style>
+    .box2 {
+      display: table-cell;
+      width: 200px;
+      height: 200px;
+      background-color: red;
+      text-align: center;
+      vertical-align: middle;
+    }
+  </style>
+
+  <div class="box2">
+
+    <span>水平垂直居中</span>
+
+  </div>
+
+
+  <h2>inline-block 行块水平垂直居中</h2>
+
+  <style>
+    .box3 {
+      width: 200px;
+      height: 200px;
+      background-color: red;
+      text-align: center;
+      line-height: 200px;
+
+      /* 或者使用这一种，子元素就不用写
+      display: table-cell;
+      vertical-align: middle;
+      text-align: center;
+      */
+    }
+
+    .box3 img {
+      vertical-align: middle;
+    }
+  </style>
+
+  <div class="box3">
+    <img style="background-color:aqua;width:100px;height: 80px;">
+  </div>
+
+  <br>
+
+  <style>
+    .box4 {
+      width: 200px;
+      height: 200px;
+      background-color: red;
+      text-align: center;
+    }
+
+    .box4 img {
+      margin-top: 60px;
+    }
+  </style>
+
+  <div class="box4">
+    <img style="background-color:aqua;width:100px;height: 80px;">
+  </div>
+
+  <h2>block 块级水平垂直居中</h2>
+
+  <br>
+
+  <style>
+    .box5 {
+      width: 200px;
+      height: 140px;
+      background-color: red;
+      padding-top: 60px;
+    }
+
+    .box5 div {
+      margin-left: auto;
+      margin-right: auto;
+      background-color: aqua;
+      width: 100px;
+      height: 80px;
+    }
+  </style>
+
+  <div class="box5">
+    <div></div>
+  </div>
+
+  <br>
+
+  <style>
+    .box6 {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      background-color: red;
+    }
+
+    .box6 div {
+      position: absolute;
+      background-color: aqua;
+      width: 100px;
+      height: 80px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      top: 0;
+      margin: auto;
+    }
+  </style>
+
+
+  <div class="box6">
+    <div>2222222<br>3333</div>
+  </div>
+
+  <br>
+
+  <style>
+    .box7 {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      background-color: red;
+    }
+
+    .box7 div {
+      position: absolute;
+      background-color: aqua;
+      width: 100px;
+      height: 80px;
+      left: 50%;
+      margin-left: -50px;
+      top: 50%;
+      margin-top: -40px;
+    }
+  </style>
+  <br>
+  <div class="box7">
+    <div>2222222<br>3333</div>
+  </div>
+
+  <br>
+
+  <style>
+    .box8 {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      background-color: red;
+    }
+
+    .box8 div {
+      position: absolute;
+      background-color: aqua;
+      width: 100px;
+      height: 80px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+  <br>
+  <div class="box8">
+    <div>2222222<br>3333<br>
+      <input type="text" style="width:100px;border: 1px solid black;outline: none;">
+    </div>
+  </div>
+
+
+
+  <h2>flex 实现水平垂直居中 不定宽高</h2>
+
+  <br>
+
+  <style>
+    .box9 {
+      display: flex;
+      width: 200px;
+      height: 200px;
+      background-color: red;
+      justify-content: center;
+      align-items: center;
+    }
+/* 或者在box9去除justify-content-align-items两个属性，在子元素加上margin：atuo */
+    .box9 * {
+      background-color: aqua;
+      width: 100px;
+      height: 80px;
+    }
+  </style>
+  <br>
+  <div class="box9">
+    <div></div>
+  </div>
+
+<style>
+  .box10 {
+    width: 200px;
+    height: 200px;
+    border: 1px solid red;
+    display: grid;
+  }
+  /* 可以去除子元素的margin  在子元素上加上   
+  align-self: center;
+    justify-self: center;
+    */
+  .box10 div {
+    width: 100px;
+    height: 100px;
+    background-color: yellow;
+    margin: auto;
+  }
+</style>
+  <h2>grid布局  不定宽高</h2>
+  <div class="box10">
+    <div></div>
+  </div>
+
+
+  <style>
+    .box11 {
+      width: 200px;
+      height: 200px;
+      border: 1px solid red;
+      display: table-cell;
+      text-align: center; 
+     
+      vertical-align: middle;
+    }
+    .box11 div {
+      width: 100px;
+      height: 100px;
+      background-color: yellow;
+      margin: auto;
+      /* display: inline-block; */
+    }
+  </style>
+    <h2>table-cell布局  不定宽高</h2>
+    <div class="box11">
+      <div></div>
+    </div>
+</body>
+
+</html>

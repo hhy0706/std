@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+   <style>
+     *{
+    margin: 0;
+    padding: 0;
+}
+body{
+    /* 关键代码   min-width: 600px; */
+    min-width: 600px;
+}
+#header,#footer{
+    height: 50px;
+    width: 100%;
+    background: grey;
+}
+#middle,#left,#right{
+    float: left;
+}
+#content{
+    overflow: hidden;
+      /* 关键代码      padding: 0 200px;*/
+    padding: 0 200px;
+   
+}
+#left,#right{
+    width: 200px;
+    height: 200px;
+    background: pink;
+}
+#middle{
+    /* 关键代码    width: 100%;*/
+    width: 100%;
+    height: 200px;
+    background: yellowgreen; 
+}
+ #left{
+    margin-left:-100% ;
+    position: relative;
+    left:-200px;
+} 
+#right{
+    margin-left: -200px;
+    position: relative;
+    left:200px;
+}
+
+/* 圣杯变双飞把 padding 去掉 相对定位也去掉 */
+
+   </style>
+</head>
+<body>
+    <!-- https://juejin.cn/post/6955482100426342430 -->
+    <div class="wrap">
+        <div id="header">header</div>
+        <div id="content">
+            <div id="middle">
+                middle
+            </div>
+            <div id="left">left</div>         
+            <div id="right">right</div>
+        </div>
+        <div id="footer">footer</div>
+    </div>
+</body>
+</html>

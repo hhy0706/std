@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+
+// https://juejin.cn/post/6934181880271110157
+// 深度优先遍历和广度优先遍历
+// const data = [   
+//      {name: 'a',       
+//       children: [            
+//             { name: 'b', children: [{ name: 'e' }] },
+//             { name: 'c', children: [{ name: 'f' }] },
+//             { name: 'd', children: [{ name: 'g' }] },
+//         ],
+//     },
+//     {
+//         name: 'a2',
+//         children: [
+//             { name: 'b2', children: [{ name: 'e2' }] },
+//             { name: 'c2', children: [{ name: 'f2' }] },
+//             { name: 'd2', children: [{ name: 'g2' }] },
+//         ],
+//     }
+// ]
+
+//     function bfs(node) {
+//      let res = [];
+//     let queue = node;
+//     while (queue.length) {
+//       let item = queue.shift();
+//       res.push(item.name);
+//       let child = item.children;    
+//     child && queue.push(...child);
+//     }
+  
+//   return res;
+// }
+//  function dfs(node){
+//     let res =  [];
+//     let stack  = node;
+//     while(stack.length){
+//         let item  = stack.shift();
+//         res.push(item.name);
+//         item.children && stack.unshift(...item.children);
+//     }
+//     return res 
+//  }
+
+
+    // 阶乘
+//     function factorial(n) {
+//   if (n === 1) return 1;
+//   return n * factorial(n - 1);
+// }
+
+// factorial(5) // 120
+
+function factorial(n, total) {
+  if (n === 1) return total;
+  return factorial(n - 1, n * total);
+}
+
+factorial(5, 1) // 120
+
+// 斐波那契
+// function Fibonacci (n) {
+//   if ( n <= 1 ) {return 1};
+
+//   return Fibonacci(n - 1) + Fibonacci(n - 2);
+// }
+
+function Fibonacci2 (n , ac1 = 1 , ac2 = 1) {
+  if( n <= 1 ) {return ac2};
+
+  return Fibonacci2 (n - 1, ac2, ac1 + ac2);
+}
+
+// 蹦床函数（把递归改成迭代）
+function trampoline(f) {
+  while (f && f instanceof Function) {
+    f = f();
+  }
+  return f;
+}
+function sum(x, y) {
+  if (y > 0) {
+    return sum.bind(null, x + 1, y - 1);
+  } else {
+    return x;
+  }
+}
+
+// 睡眠函数
+function sleep(interval) {
+  return new Promise(resolve => {
+    setTimeout(resolve, interval);
+  })
+}
+
+// 用法
+async function one2FiveInAsync() {
+  for(let i = 1; i <= 5; i++) {
+    console.log(i);
+    await sleep(1000);
+  }
+}
+
+one2FiveInAsync();
+
+//new实现
+// var f = new F();
+// // 等同于
+// var f = Object.setPrototypeOf({}, F.prototype);
+// F.call(f);
+
+
+//Object.create()实现
+function create(obj){
+    function Fn(){};
+    Fn.prototype = obj;
+    Fn.prototype.constructor = Fn
+    return new Fn();
+}
+
+//牛客 URLSearchParams实现
+class URLSearchParams {
+            constructor(val) {
+                if (typeof val == "string") {
+                    this.obj = val.split("&").map(item => {
+                        let index = item.indexOf('=');
+                        let start = item.slice(0, index);
+                        let end = item.slice(index + 1);
+                        return [start, end]
+                    });
+                    console.log(this.obj)
+                }
+                else{
+             this.obj=Object.entries(val)
+                }
+            }
+            get(val) {
+                for (let i = 0; i < this.obj.length; i++) {
+                    let key = this.obj[i][0];
+                    if (key == val) {
+
+                        return this.obj[i][1]
+                    }
+                }
+            }
+            has(val) {
+                for (let i = 0; i < this.obj.length; i++) {
+                    let key = this.obj[i][0];
+                    if (key == val) {
+
+                        return true
+                    }
+                }
+                return false
+            }
+            append(...arg) {
+                this.obj.push(arg)
+              
+            }
+            set(key, val) {
+                if (this.has(key)) {
+                    for (let i = 0; i < this.obj.length; i++) {
+                        let key1 = this.obj[i][0];
+                        if (key1 == key) {
+
+                            this.obj[i][1]=val
+                            return true
+
+                        }
+                    }
+                }
+                else{
+                    this.append(key,val)
+                    return true
+                }
+
+            }
+        }
+        let a = new URLSearchParams({foo:"1",bar:'2'});
+
+
+
+ // 将一个扁平化的对象数组，转化为树形结构
+        // 现在有一个对象组成的数组，每个元素有id属性和parent_id属性，根据其id属性和parent_id属性，将其转换为树结构的对象
+        const arr = [
+            {
+                id: '1',
+                parent_id: 'root',
+                name: 'abc'
+            },
+            {
+                id: '2',
+                parent_id: 'root',
+                name: 'abc'
+            },
+            {
+                id: '1-1',
+                parent_id: '1',
+                name: 'abc'
+            },
+            {
+                id: '1-2',
+                parent_id: '1',
+                name: 'abc'
+            },
+            {
+                id: '1-1-1',
+                parent_id: '1-1',
+                name: 'abc'
+            },
+            {
+                id: '1-1-2',
+                parent_id: '1-1',
+                name: 'abc'
+            },
+            {
+                id: '1-2-1',
+                parent_id: '1-2',
+                name: 'abc'
+            },
+            {
+                id: '2-1',
+                parent_id: '2',
+                name: 'abc'
+            },
+            {
+                id: '2-2',
+                parent_id: '2',
+                name: 'abc'
+            },
+            {
+                id: '2-1-1',
+                parent_id: '2-1',
+                name: 'abc'
+            },
+            {
+                id: '2-2-1',
+                parent_id: '2-2',
+                name: 'abc'
+            },
+            {
+                id: '2-2-1-1',
+                parent_id: '2-2-1',
+                name: 'abc'
+            },
+            {
+                id: '2-2-1-2',
+                parent_id: '2-2-1',
+                name: 'abc'
+            },
+            {
+                id: '2-2-1-2-1',
+                parent_id: '2-2-1-2',
+                name: 'abc'
+            },
+            {
+                id: '2-3',
+                parent_id: '2',
+                name: 'abc'
+            },
+            {
+                id: '2-3-1',
+                parent_id: '2-3',
+                name: 'abc'
+            },
+            {
+                id: '3',
+                parent_id: 'root',
+                name: 'abc'
+            },
+        ];
+
+        // 将这样一个数组，变成能够以树形展示的对象
+
+        //先将数组中的每一个节点放到temp对象中（创建set）
+        //即数组中有{id: '2-3', parent_id: '2',...}这样一个节点，需要将他放到temp中变成 '2-3': {id: '2-3', parent_id: '2',...}这种JSON结构
+        //直接遍历整个temp对象，通过这句代码   temp[temp[i].parent_id].children[temp[i].id] = temp[i];  
+        //将当前子节点与父节点建立连接。是因为我们保证了父节点一定在子节点前，
+        //那么当子节点出现的时候就直接可以用temp[temp[i].parent_id]来查找到父节点这个时候先父节点的children对象中添加一个引用即可。
+
+
+        function buildTree(array,id,parent_id) {
+            // console.time('123');
+            // 创建临时对象
+            let temp = {};
+            // 创建需要返回的树形对象
+            let tree = [];
+            // 先遍历数组，将数组的每一项添加到temp对象中
+            for(let i in array) {
+                temp[array[i][id]] = array[i];
+            }
+
+            for(let i in temp) {
+                // 判断是否是根节点下的项
+                // console.log(temp[temp[i][parent_id]])
+                if(temp[i][parent_id] !== 'root') {
+                     if(!temp[temp[i][parent_id]].children) {
+                         temp[temp[i][parent_id]].children = new Array();
+                     }
+
+                     temp[temp[i][parent_id]].children.push(temp[i]);
+                } else {
+
+                    tree[temp[i][id]-1] = temp[i];
+
+                }
+            }
+
+            return tree;
+        }
+
+        const obj = buildTree(arr, 'id', 'parent_id');
+          console.log(obj);  
+        function getMaxFloor(tree) {
+            let max = 0;
+            function deepth(data,floor){
+                data.forEach(item=>{
+                    if(floor>max){
+                        max=floor;
+                    }
+                    if(item.children){
+                        deepth(item.children,floor+1)
+                    }
+                })
+            }
+            deepth(tree,1)
+            return max
+        }
+        console.log(getMaxFloor(obj))
+
+
+        // 观察者
+        let Event = {
+     task:{},
+     on(type,fn){
+         if(!this.task[type]){
+            this.task[type]=[];
+         }
+         if(typeof fn == 'function'){
+            this.task[type].push(fn);
+         }
+     },
+     emit(type,...arg){   
+        // let type=arg[0]
+        let arr=this.task[type]
+        
+        if(!arr||arr.length==0) return;
+        arr.forEach((fn)=>fn(...arg))
+        // let parma  = arg.slice(1)
+        // for(let i=0;i<arr.length;i++){
+        //     arr[i].apply(this,parma)
+        // }
+     },
+     off(...arg){
+        if(!arg){
+            this.task={};
+            return ;
+        }
+        let type = arg[0];
+        let fn  = this.task[type]
+        if(!fn||fn.length==0) return ;
+        for(let i=0;i<fn.length;i++){
+            if(fn[i]==arg[1]){
+                fn.splice(i,1)
+            }
+        }
+     }
+ }
+
+//  function baozhi(a,b){
+//     console.log(a,b)
+//  }
+// Event.on('baozhi',baozhi)
+// setInterval(()=>{
+//     Event.emit('baozhi',1,2)
+// },1000)
+// setTimeout(()=>{
+//     Event.off('baozhi',baozhi)
+// },4500)
+
+// function caomei(a,b){
+//     console.log(`草莓真的好吃啊!${a}${b}`)
+// }
+// Event.on('caomei',caomei)
+// setInterval(()=>{
+//     Event.emit('caomei','对啊','是的')
+// },1000)
+// setTimeout(()=>{
+//     Event.off('caomei',caomei)
+// },3500)
+
+//小驼峰
+// let str = "border-bottom-color";
+// function transform(str){
+//     let arr=str.split('-');
+//     for(let i=1;i<arr.length;i++){
+//         arr[i]=arr[i][0].toUpperCase().concat(arr[i].slice(1));
+//     }
+//     arr =arr.join('')
+//     return arr
+// }
+// console.log(transform(str))
+
+// sum(a,b) sum(a)(b)
+function sum(...arg){
+    if(arg.length==2){
+        return arg[0]+arg[1]
+    }
+    else{
+        return function(x){
+            return arg[0]+x
+        }
+    }
+}
+console.log(sum(2,4))
+
+// 随机[2-32]
+// function   getRand(n){
+//             let arr =[]
+//             if(n<=0||n>31) return arr;
+//             for(let i=0;i<n;i++){
+//                 rand = Math.round(Math.random()*31+2);
+//                 if(arr.includes(rand)){
+//                     i--;
+//                 }
+//                 else{
+//                     arr.push(rand)
+//                 }
+//             }
+//             return arr
+//         }
+//         let arr =getRand(31)
+
+
+// slice 
+// Array.prototype.slice = function(start=0,end = this.length) {
+//    const res = [];
+//     if(start >=this.length) return res;
+//     if(end >this.length) end =this.length;
+//     if(start <0) start = start+this.length<0?0:start + this.length;
+//     if(end <0) end = end+this.length<0?0:end + this.length;
+//     for(var i=start; i<end; i++){
+//         res.push(this[i]);
+//     }
+//     return res;
+// }
+
+// splice
+// Array.prototype.mySplice = function (delIndex, count = this.length-delIndex, ...inserts) {  
+//       //判断delIndex
+//       if (delIndex >= this.length) return []
+//       if (delIndex < 0) {
+//           delIndex = delIndex + this.length < 0 ? 0 : delIndex + this.length;
+//       }
+//       //获取返回值
+//       const res = this.slice(delIndex, delIndex + count);
+      
+//       //获取在delIndex处删除到某些元素，并插入新元素之后的新数组This
+//       const This = [...this.slice(0, delIndex), ...inserts, ...this.slice(delIndex + count)]
+    
+//       /* this替换处理开始  使用This替换旧的原始数组this  */
+//       //当this长度大于This时，无法全部覆盖，先将this多出的的部分删除
+//       while (this.length > This.length) {
+//           //删除this的最后一个元素，一直到this长度和This长度相同时，结束循环
+          
+//           this.pop()
+        
+//       }
+//       //delIndex之前this的元素与This相同，从delIndex之后全部重新赋值，使用This中的元素覆盖this的元素，达到改变this的效果
+//       for (let i = delIndex; i < This.length; i++) {
+//           this[i] = This[i]
+//       }
+//       /* this替换完毕 */
+//       //返回被删除的元素
+//       return res;
+//   }
+
+
+//   数组map实现
+// Array.prototype.map = function (cb,thisValue){
+//     if(!Array.isArray(this)||this.length==0|| typeof cb !='function'){
+//         return []
+//    }
+//    const res = [];
+//    for(let i=0; i<this.length; i++){
+//     res.push(cb.call(thisValue,this[i], i,this));
+//    }
+//    return res;
+// }
+
+
+
+// 数组filter实现
+// Array.prototype.filter =   function (cb,thisValue){
+//     if(!Array.isArray(this)||this.length==0||typeof cb!='function'){
+//         return [];
+//     }
+//     const res =[]
+//     for(let i=0;i<this.length;i++){
+//         if(cb.call(thisValue,this[i],i,this)){
+//             res.push(this[i]);
+//         }
+//     }
+//     return res;
+//  }
+
+// 数组indexOf 实现
+// Array.prototype.myIndexOf = function (param,start=0) {
+//             //如果start大于等于数组长度，此时this[start]越界，返回-1
+//              if (start >= this.length) return -1
+//              //如果start小于0，判断start + this.length
+//             if (start < 0) {
+//                 start = start + this.length < 0 ? 0 : start + this.length;
+//             }
+//             //start处理完毕，开始从start处遍历数组，查找元素下标
+//             for (let i = start; i < this.length; i++) {
+//                 if (this[i] === param) return i;
+//             }
+//             //遍历完毕没有找到相应元素，返回-1
+//             return -1
+//         }
+
+// 数组 include 实现 https://segmentfault.com/a/1190000022959425
+// Array.prototype.mInclude = function(param,start=0){
+//     if(start>=this.length){
+//         return false;
+//     }
+//     if(start<0){
+//         start = start +this.length<0? 0:start+this.length;
+//     }
+//     if(Number.isNaN(param)){
+//         for(let i=start; i<=this.length; i++){
+//             if(Number.isNaN(this[i])){
+//                 return true;
+//             }
+//         }
+//     }
+//     else {
+//         for(let i=start; i<=this.length; i++){
+//             if(this[i]===param){
+//                 return true;
+//             }
+//         }
+//     }
+//     return false;
+// }
+
+//  some 
+// Array.prototype.some = function(cb,thisValue){
+//     if(typeof cb !== 'function') return;
+//     for(var i = 0; i < this.length; i++){
+//         if(cb.call(thisValue, this[i], i,this)) return true;
+//     }
+//     return false;
+// }
+
+// every
+// Array.prototype.every = function (cb, thisValue) {
+//             if (typeof cb !== 'function') {
+//                 throw new Error('第一个参数应当是函数')
+//             }
+//          
+//             for (let i = 0; i < this.length; i++) {
+//                 //如果任一次回调函数的返回值为假，就返回false，every就此停止执行
+//                 //使用call方法 绑定回调函数中的this
+//                 if (!cb.call(thisValue, this[i], i, this)) {
+//                     return false;
+//                 }
+//             }
+//             //若遍历执行之后，回调函数结果全为真，返回true
+//             return true
+//         }
+
+// https://segmentfault.com/a/1190000022958988
+// Array.prototype.find = function(cb,thisValue){
+//     if(typeof cb !='function') return;
+//      //如果不是空数组，遍历数组，依次执行回调函数，一旦回调函数返回值为真，返回此项元素，否则继续执行
+//     if(this.length){
+//         for(let i = 0; i < this.length; i++){
+//           if(  cb.call(thisValue,this[i],i,this)) return this[i]
+//         }
+//     }
+//        //如果是空数组，不作处理，最终会默认返回undefined
+// }
+
+//  实现new https://segmentfault.com/a/1190000021905571
+//   function MyNew() {
+//     let constructor = Array.prototype.shift.call(arguments);
+//         let obj = {};
+
+//         // obj.__proto__ = constructor.prototype;constructor.prototype少写原型
+ 
+//         Object.setPrototypeOf(obj, constructor.prototype);
+        //  // 让this指向obj空对象 （失误点）
+//         let res =    constructor.apply(obj, arguments);
+//         return typeof res === 'object' ? res :obj
+//     }   
+
+
+//     function Man(name, age) {
+//       this.name = name
+//       this.age = age
+//     }
+//     var tom = new Man('tom', 20)
+//     var mike = MyNew(Man, 'mike', 30)
+//     console.log(tom  instanceof Man, mike instanceof Man) // true true
+
+// 实现 call 
+// Function.prototype.myCall = function (context) {
+//       context = context ? Object(context) : window 
+//       context.fn = this // 重置上下文
+//       let args = [...arguments].slice(1) // 截取参数a,b
+//       let r = context.fn(...args) // 执行函数
+//       delete context.fn // 删除属性，避免污染
+//       return r // 返回结果
+//     }
+//     // 浏览器环境下
+//     let a = 1, b = 2;
+//     var obj ={a: 10,  b: 20}
+//     function test(key1, key2){
+//       console.log(this[key1] + this[key2]) 
+//     }
+//     test('a', 'b') // 3
+//     test.myCall(obj, 'a', 'b') // 30
+    
+    // apply 原理
+    // Function.prototype.myApply = function (context) {
+    //   context = context ? Object(context) : window
+    //   context.fn = this
+    //   let args = [...arguments][1]
+    //   if (!args) {
+    //     return context.fn()
+    //   }
+    //   let r = context.fn(...args)
+    //   delete context.fn;
+    //   return r
+    // }
+        
+    // bind
+    // Function.prototype.myBind = function (context) {
+    //   context = context ? Object(context) : window 
+    //   context.fn = this // 重置上下文
+    //   let args = [...arguments].slice(1) // 截取参数a,b
+    //     // 执行函数
+      
+    //   return function(...param){
+    //     const res  = context.fn(...args,...param);
+    //     delete context.fn;
+    //     return res
+    //   } // 返回结果
+    // }
+
+    //instanceof实现 前端知识公众号 
+          // function instanceOf1(obj,fun){
+        //     if(!(obj&&['object','function'].includes(typeof obj))){
+        //         return false;
+        //     }
+        //     let proto = Object.getPrototypeOf(obj);
+        //     if(proto === fun.prototype){
+        //         return true;
+        //     }else if(proto===null){
+        //         return false;
+        //     }
+        //    return instanceOf1(proto,fun);
+        // }
+        // function instanceOf1(obj,fun){
+            // 如果是null或者不是function object就返回false
+        //          if(!(obj&&['object','function'].includes(typeof obj))){
+        //         return false;
+        //     }
+        //     let proto = obj;
+        //     while(proto ){
+        //         proto = Object.getPrototypeOf(proto)
+        //         if(proto===fun.prototype){
+        //             return true;
+        //         }
+  
+        //     }
+        //     return false;
+        // }
+
+        // Thunk函数的实现 
+        // 只接受回调函数作为参数。这个单参数版本，就叫做 Thunk 函数。
+        // ，Thunk 函数现在可以用于 Generator 函数的自动流程管理。
+//         function run(gen){
+//   var g = gen();
+
+//   function next(data){
+//     var result = g.next(data);
+//     if (result.done) return result.value;
+//     result.value.then(function(data){
+//       next(data);
+//     });
+//   }
+
+//   next();
+// }
+
+// run(gen);
+
+// spawn函数
+// function spawn(gen){
+//     return new Promise(function(resolve,reject){
+//         let it =  gen();
+//         function step(fn){
+//             let next
+//           try{
+//             next  = fn();
+//           }catch(e){
+//             return reject(e);
+//           }
+//           if(next.done)return resolve(next.value);
+//           Promise.resolve(next.value).then(res =>{
+//             step(()=>it.next(res))
+//           },
+//             reason=>{
+//                 step(()=>it.throw(reason))
+//             }
+//           )
+//         }
+//         step(()=>it.next(undefined))
+//     })
+// }
+
+// 迭代器
+function createIterator(items) {
+    var i = 0
+    return {
+        next: function() {
+            var done = (i >= items.length)
+            var value = !done ? items[i++] : undefined
+            
+            return {
+                done: done,
+                value: value
+            }
+        }
+    }
+}
+// vue2 
+  // class Observer{
+        //     constructor(data){
+        //         this.walk(data)
+        //     }
+        //     walk(data){
+        //         if(data==null||typeof data!=="object") return;
+        //         for(let key in data){
+        //             this.defineReactive(data,key,data[key])
+        //         }
+        //     }
+        //     defineReactive(data,key,value){
+        //         const self = this;
+        //         this.walk(value)
+        //         Object.defineProperty(data,key,{
+        //             configurable: true,
+        //             enumerable: true,
+        //             get(){
+        //                 return value
+        //             },
+        //             set(newVal){
+        //                 console.log(222)
+        //                 if(newVal==value) return;
+        //                 self.walk(newVal);
+        //                 value = newVal;
+        //             }
+        //         })
+        //     }
+        // }
+// vue3 数据劫持
+// function  observe_proxy(data){
+//     return new Proxy(data,{
+//         get(target,key,receiver){
+//             if(target[key]&&typeof target[key]==="object"){
+//               return  observe_proxy(target[key])
+//             }
+//             return Reflect.get(target,key,receiver)
+//         },
+//         set(target,key,value,receiver){
+//             update()
+//             return Reflect.set(target,key,value,receiver)
+//         }
+//     })
+// }
+// const asss = {
+//   name: 'yimwu',
+//   tel: '134xxx54567',
+//   address: {
+//     firstAdd: 'guangzhou',
+//     second: 'shenzhen'
+//   },
+// }
+// // 
+// const dataProxy = observe_proxy(asss)
+// dataProxy.address.firstAdd = 'jieyang'
+
+  </script>
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" middle="IE=edge" />
+    <meta name="viewport" middle="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        min-width: 600px;
+      }
+      .header,
+      .footer {
+        height: 100px;
+        background-color: green;
+      }
+      .content {
+        padding: 0 200px;
+        overflow: hidden;
+      }
+      .left,
+      .right,
+      .middle {
+        float: left;
+        height: 200px;
+      }
+      .left {
+        background-color: pink;
+        width: 200px;
+        margin-left: -100%;
+        left: -200px;
+        position: relative;
+      }
+      .middle {
+        width: 100%;
+        background-color: blue;
+      }
+      .right {
+        background-color: aqua;
+        width: 200px;
+        margin-left: -200px;
+        position: relative;
+        right: -200px;
+      }
+      .center ~ p {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <p>1</p>
+      <p class="center">2</p>
+      <p>3</p>
+      <p>4</p>
+    </div>
+    <div class="header"></div>
+    <div class="content">
+      <div class="middle">middle</div>
+      <div class="left">left</div>
+
+      <div class="right">right</div>
+    </div>
+    <div class="footer"></div>
+    <a href="/home">home</a>
+    <a href="/page">page</a>
+    <div id="route"></div>
+    <div id="app">{{name}}</div>
+    <input type="text" id="ipt" />
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script> -->
+    <!-- <script src="./observer.js"></script> -->
+    <script src="./vue.js"></script>
+    <!-- <script src="./深拷贝.js"></script> -->
+    <script>
+ 
+
+      // class Watcher {
+      //   update() {
+      //     console.log("update");
+      //   }
+      // }
+      // class Dep {
+      //   constructor() {
+      //     this.subs = [];
+      //   }
+      //   addSub(sub) {
+      //     if (sub && sub.update) {
+      //       this.subs.push(sub);
+      //     }
+      //   }
+      //   notify() {
+      //     this.subs.forEach((sub) => sub.update());
+      //   }
+      // }
+      // const a = new Watcher();
+      // const b = new Dep();
+      // b.addSub(a);
+   
+ 
+      // class Observer{
+      //     constructor(data){
+      //         this.walk(data)
+      //     }
+      //     walk(data){
+      //         if(data==null||typeof data!=="object") return;
+      //         for(let key in data){
+      //             this.defineReactive(data,key,data[key])
+      //         }
+      //     }
+      //     defineReactive(data,key,value){
+      //         const self = this;
+      //         this.walk(value)
+      //         Object.defineProperty(data,key,{
+      //             configurable: true,
+      //             enumerable: true,
+      //             get(){
+      //                 return value
+      //             },
+      //             set(newVal){
+      //                 console.log(222)
+      //                 if(newVal==value) return;
+      //                 self.walk(newVal);
+      //                 value = newVal;
+      //             }
+      //         })
+      //     }
+      // }
+      // const  ref  = {
+      //     a:1,
+      //     b:{
+      //         a:2
+      //     }
+      // }
+      // const observer =new Observer(ref)
+
+      // let str = "  sadd   sad    sad sd  ";
+      // str = str.trim().replace(/\s+/g, "-");
+      // console.log(str);
+      // let obj = {
+      //   name: "22",
+      // };
+
+      function* genF() {
+        yield 1;
+        yield Promise.reject(2);
+        yield 4;
+        return 50;
+      }
+      function spawn(genF) {
+        return new Promise((resolve, reject) => {
+          const gen = genF();
+          function step(nextF) {
+            let next;
+            try {
+              next = nextF();
+            } catch (e) {
+              return reject(e);
+            }
+            if (next.done) {
+              return resolve(next.value);
+            }
+            Promise.resolve(next.value).then(
+              (v) => {
+                step(() => {
+                  return gen.next(v);
+                });
+              },
+              (e) => {
+                step(() => {
+                  return gen.throw(e);
+                });
+              }
+            );
+          }
+          step(() => {
+            return gen.next(undefined);
+          });
+        });
+      }
+      spawn(genF)
+        .then((v) => {
+          console.log(v);
+        })
+        .catch((e) => {
+          console.log(e);
+        });
+      // function clone(target, map = new WeakMap()) {
+      //     if (typeof target === 'object'&&target!==null) {
+      //         const isArray = Array.isArray(target);
+      //         let cloneTarget = isArray ? [] : {};
+
+      //         if (map.get(target)) {
+      //             return map.get(target);
+      //         }
+      //         map.set(target, cloneTarget);3555555555
+
+      //         const keys = isArray ? undefined : Object.keys(target);
+      //         forEach(keys || target, (value, key) => {
+      //             if (keys) {
+
+      //                 key = value;
+
+      //             }
+      //             cloneTarget[key] = clone(target[key], map);
+      //         });
+
+      //         return cloneTarget;
+      //     } else {
+      //         return target;
+      //     }
+      // }
+      // function forEach(array, iteratee) {
+      //     let index = -1;
+      //     const length = array.length;
+      //     while (++index < length) {
+
+      //         iteratee(array[index], index);
+      //     }
+      //     return array;
+      // }
+      // const target = {
+      //     field1: 1,
+      //     field2: null,
+      //     field3: {
+      //         child: 'child'
+      //     },
+      //     field4: [2, 4, 8],
+      //     f: { f: { f: { f: { f: { f: { f: { f: { f: { f: { f: { f: {} } } } } } } } } } } },
+      // };
+
+      // target.target = target;
+      // const result2 = clone(target);
+      // console.log(result2)
+
+      //   const app =   document.querySelector('#app')
+      // const vm = new Vue({
+      //     el:'#app',
+      //     data:{
+      //     name:[1,2,3,4,5,6],
+      //     info:{
+      //         age:111,
+      //         sex :1
+      //     }
+      //  }
+      // });
+      // console.log(vm)
+      // let obj  = {
+      //     name:'hhy'
+      // }
+
+      // class Subject {
+      //     constructor(){
+      //         this.observerLists = []
+      //     }
+      //     addObs(obs){
+      //         this.observerLists.push(obs)
+      //     }
+      //     notify(){
+      //         this.observerLists.forEach(obs =>{
+      //             obs.update()
+      //         })
+      //     }
+      //     empty(){
+      //         this.observerLists = []
+      //     }
+      // }
+      // class Observer{
+      //     update(){
+      //         console.log('视图赶紧去更新')
+      //     }
+      // }
+      // let sub = new Subject();
+      // let obs1 = new Observer()
+      // let obs2 = new Observer();
+      // sub.addObs(obs1)
+      // sub.addObs(obs2)
+      // sub.notify();
+
+      //  function ajax(res){
+      //     console.log(`更新信息成功了${res}`)
+      //  }
+      //  const btn  = document.getElementById('btn');
+      //  function throttle(fn,time){
+      //     let timer = 0 ;
+      //     return function(res){
+      //       let now =  new Date();
+      //       if(now-timer > time){
+      //         timer = now;
+      //         fn.call(this,res);
+      //       }
+      //     }
+      //  }
+      //  let  db = throttle(ajax, 1000)
+      //  btn.addEventListener("input",(e)=>{
+      //    db( e.target.value)
+      //  })
+
+      //  let obj  = {
+      //     name:[1,2,3,4,5,6],
+      //     info:{
+      //         age:111,
+      //         sex :1
+      //     }
+      //  }
+
+      //    observer(obj)
+
+      //      function observer(obj){
+      //         if(typeof obj == 'object' && obj!==null){
+      //             for(key in obj){
+      //                 defineReactive(obj,key, obj[key]);
+      //             }
+      //         }
+      //      }
+      //      function defineReactive(obj,key,val){
+      //         observer(val)
+      //         Object.defineProperty(obj,key,{
+      //             get(){
+      //                 return val
+      //             },
+      //             set(newVal){
+      //                 observer(newVal)
+      //                 console.log('更新成功')
+      //                 val = newVal;
+      //             }
+      //         })
+      //      }
+      //   const methods  = ['push', 'pop', 'unshift', 'shift','splice','sort',]
+      //    methods.forEach(method =>{
+
+      //     let old =   Array.prototype[method];
+      //     Array.prototype[method] =function(...arg){
+      //         console.log('111阿萨德 ')
+      //         old.apply(this,arg)
+      //     }
+      //    })
+
+      // 数组扁平化
+    //    function flatten(arr, depth) {
+    //   if (depth <= 0) return arr;
+    //   return arr.reduce((pre, cur) => {
+    //     return pre.concat(Array.isArray(cur) ? flatten(cur, depth - 1) : cur);
+    //   }, []);
+    // }
+    // function flatten(arr, depth) {
+    //   const res = [];
+    //   function flat(arr, depth) {
+    //     arr.forEach((item) => {
+    //       if (Array.isArray(item) && depth > 0) {
+    //         flat(item, depth - 1);
+    //       } else {
+    //         res.push(item);
+    //       }
+    //     });
+    //   }
+    //   flat(arr, depth);
+    //   return res;
+    // }
+    </script>
+  </body>
+</html> -->

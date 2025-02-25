@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <script>
+    console.log(typeof typeof typeof null);
+    // 元数据不具有响应式不要操作元数据。
+    const bucket = new WeakMap();
+    const reactiveMap =  new Map();
+    const ITERATE_KEY = Symbol()
+    const originMethod =  Array.prototype.includes;
+    const arrayInstrumentations  = {
+      // includes(...arg){
+      //   let res  = originMethod.apply(this,arg);
+      //   if(res === false){
+      //     res  = originMethod.apply(this.raw,arg);
+      //   }
+      //   return res;
+      // }
+    };
+    const findMethods =  ['includes','indexOf','lastIndexOf'];
+    const stackMethods = ['push'];
+   findMethods.forEach(method =>{
+      const originMethod = Array.prototype[method]; 
+      arrayInstrumentations[method] = function(...arg) {
+        console.log(arg)
+        let res  = originMethod.apply(this,arg);
+        if(res === false || res === -1){
+          res  = originMethod.apply(this.raw,arg);
+        }
+        return res;
+      }
+      
+    })
+    let shouldTrack =  true;
+  stackMethods.forEach(method =>{
+    
+    const originMethod = Array.prototype[method]; 
+
+      arrayInstrumentations[method] = function(...arg) {
+        
+        shouldTrack = false;
+        let res  = originMethod.apply(this,arg);
+         shouldTrack = true;
+        return res;
+      }
+  })
+    const obj = {};
+    const proto = { bar: 2 };
+    const child = reactive(obj);
+    const parent = reactive(proto);
+    Object.setPrototypeOf(child, parent);
+    const data = { foo: 1 }
+    let activeEffect;
+    const effectStack = [];
+    const jobQueue = new Set();
+    let isFlushing = false;
+    const p1 = Promise.resolve();
+
+    function flushJob() {
+      if (isFlushing) return;
+      isFlushing = true;
+      p1.then(() => {
+        jobQueue.forEach(job => job())
+      }).finally(() => {
+        isFlushing = false;
+      })
+    }
+    // function effect(fn){
+    //   activeEffect = fn;
+    //   fn();
+    // }
+    function effect(fn, options = {}) {
+    const effectFn =  () =>{
+        cleanup(effectFn)
+         activeEffect = effectFn;
+         effectStack.push(effectFn)
+         const res = fn();
+           effectStack.pop()
+           activeEffect = effectStack[effectStack.length-1]
+          return res;
+      }
+      effectFn.deps = [];
+      effectFn.options = options
+      if(!options.lazy){
+        effectFn();
+      }
+      return effectFn;
+    }
+    function cleanup(effectFn) {
+      for (let i = 0; i < effectFn.deps.length; i++) {
+        const deps = effectFn.deps[i];
+        deps.delete(effectFn)
+      }
+      effectFn.deps.length = 0;
+    }
+    function track(target, key) {
+      
+      if (!activeEffect || !shouldTrack) return;
+      let depsMap = bucket.get(target);
+      if (!depsMap) {
+        bucket.set(target, depsMap = new Map())
+      }
+      let deps = depsMap.get(key);
+
+      if (!deps) {
+        depsMap.set(key, deps = new Set())
+      }
+      deps.add(activeEffect);
+      activeEffect.deps.push(deps);
+    }
+    //  document.body.innerText = data.text;
+    function trigger(target, key, type, newVal) {
+      
+      const depsMap = bucket.get(target);
+      if (!depsMap) return;
+      const effectsToRun = new Set();
+      if (Array.isArray(target) && key === 'length') {
+        depsMap.forEach((effects, key) => {
+          if (key >= newVal) {
+            effects.forEach(effectFn => {
+              if (effectFn !== activeEffect) {
+                effectsToRun.add(effectFn);
+              }
+            })
+          }
+        })
+      }
+      const effects = depsMap.get(key);
+
+      effects && effects.forEach(effectFn => {
+        if (effectFn !== activeEffect) {
+          effectsToRun.add(effectFn);
+        }
+      })
+      if (type === 'ADD' && Array.isArray(target)) {
+        const lengthEffects = depsMap.get('length');
+        lengthEffects && lengthEffects.forEach(effectFn => {
+          if (effectFn !== activeEffect) {
+            effectsToRun.add(effectFn);
+          }
+        })
+      }
+      if (type === 'ADD' || type === 'DELETE') {
+        const iterateEffects = depsMap.get(ITERATE_KEY);
+        iterateEffects && iterateEffects.forEach(effectFn => {
+          if (effectFn !== activeEffect) {
+            effectsToRun.add(effectFn);
+          }
+        })
+      }
+
+      effectsToRun.forEach(fn => {
+        if (fn.options.scheduler) {
+          fn.options.scheduler(fn)
+        } else {
+          fn()
+        }
+
+
+      });
+
+
+    }
+    const p = reactive(data)
+    function reactive(obj) {
+      const existionProxy  = reactiveMap.get(obj);
+      if(existionProxy) return existionProxy
+      const proxy  = createReactive(obj)
+      reactiveMap.set(obj, proxy)
+      return proxy
+    }
+    function shallowReactive(obj) {
+      return createReactive(obj, true)
+    }
+    function readonly(obj) {
+      return createReactive(obj, false, true)
+    }
+  
+    function createReactive(obj, isShallow = false, isReadonly = false) {
+      return new Proxy(obj, {
+        get(target, key, receiver) {
+
+          if (key === 'raw') return target;
+          if(Array.isArray(target)&&arrayInstrumentations.hasOwnProperty(key)){
+              return Reflect.get(arrayInstrumentations,key,receiver)
+          }
+
+          if (!isReadonly && typeof key !== 'symbol') {
+            track(target, key)
+          }
+          const res = Reflect.get(target, key, receiver)
+          if (isShallow) return res;
+          if (typeof res == 'object' && res != null) {
+            return isReadonly ? readonly(res) : reactive(res)
+          }
+          return res;
+        },
+        set(target, key, value, receiver) {
+          
+          if (isReadonly) {
+            console.warn(`属性 ${key} 是只读的`)
+            return true
+          }
+          const oldVal = target[key];
+
+          const type = Array.isArray(target) ? Number(key) < target.length ? 'SET' : 'ADD' : Object.prototype.hasOwnProperty.call(target, key) ? "SET" : "ADD"
+
+          const res = Reflect.set(target, key, value, receiver)
+          
+          if (target === receiver.raw) {
+            if (oldVal !== value && (oldVal === oldVal || value === value)) {
+              trigger(target, key, type, value)
+            }
+          }
+          // Reflect.set(target, key, value, receiver)
+          return res;
+        },
+        ownKeys(target) {
+
+          track(target, Array.isArray(target) ? 'length' : ITERATE_KEY)
+          return Reflect.ownKeys(target);
+        },
+        deleteProperty(target, key) {
+       
+          if (isReadonly) {
+            console.warn(`属性 ${key} 是只读的`)
+            return true
+          }
+          const hadKey = Object.prototype.hasOwnProperty.call(target, key);
+          const res = Reflect.deleteProperty(target, key);
+          if (res && hadKey) {
+            trigger(target, key, 'DELETE')
+          }
+          return res
+        }
+      })
+    }
+    const aa = {
+      a: {
+        b: 2
+      }
+    }
+    let ax = {}
+    let arr =  [ax]
+    const res = reactive(arr)
+    effect(() => {
+      res.push(1)
+      console.log(1)
+    })
+ 
+    effect(() => {
+      console.log(res.length)
+    })
+   res[3] = 2
+// res.length =2;  
+      // arr[1] = 'bar'
+   
+    // effect(() => {
+    //   console.log(child.bar)
+    // })
+    // child.bar = 1
+// console.log(child.raw  === child)
+   //      effect(() => {
+//       for(const key in p){
+//         console.log(key)
+//       }
+//      })
+//  p.bar = 2
+//  delete p.bar
+//     effect(function effectFn1() {
+//       console.log(obj.foo)
+//  },{
+//   scheduler(fn){
+
+//     jobQueue.add(fn)
+
+//     flushJob()
+//   }
+//  })
+//   effect(function effectFn1() {
+//       console.log(111,obj.foo)
+//  },{
+//   scheduler(fn){
+
+//     jobQueue.add(fn)
+
+//     flushJob()
+//   }
+//  })
+
+  </script>
+</body>
+
+</html>

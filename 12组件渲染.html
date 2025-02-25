@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <script src="https://unpkg.com/@vue/reactivity@3.0.5/dist/reactivity.global
+.js"></script>
+    <script>
+                     const [props, attrs] = resolveProps(propsOption, vnode.props);
+                     function lis(arr) {
+                       const p = arr.slice(); //  保存原始数据
+                       const result = [0]; //  存储最长增长子序列的索引数组
+                       let i, j, u, v, c;
+                       const len = arr.length;
+                       for (i = 0; i < len; i++) {
+                         const arrI = arr[i];
+                         if (arrI !== 0) {
+                           j = result[result.length - 1]; //  j是子序列索引最后一项
+                           if (arr[j] < arrI) {
+                             //  如果arr[i] > arr[j], 当前值比最后一项还大，可以直接push到索引数组(result)中去
+                             p[i] = j; //  p记录第i个位置的索引变为j
+                             result.push(i);
+                             continue;
+                           }
+                           u = 0; //  数组的第一项
+                           v = result.length - 1; //  数组的最后一项
+                           while (u < v) {
+                             //  如果arrI <= arr[j] 通过二分查找，将i插入到result对应位置；u和v相等时循环停止
+                             c = ((u + v) / 2) | 0; //  二分查找
+                             if (arr[result[c]] < arrI) {
+                               u = c + 1; //  移动u
+                             } else {
+                               v = c; //  中间的位置大于等于i,v=c
+                             }
+                           }
+                           if (arrI < arr[result[u]]) {
+                             if (u > 0) {
+                               p[i] = result[u - 1]; //  记录修改的索引
+                             }
+                             result[u] = i; //  更新索引数组(result)
+                           }
+                         }
+                       }
+
+                       u = result.length;
+                       v = result[u - 1];
+                       //把u值赋给result
+                       while (u-- > 0) {
+                         //  最后通过p数组对result数组进行进行修订，取得正确的索引
+                         result[u] = v;
+                         v = p[v];
+                       }
+                       return result;
+                     }
+                     function getSequence(arr) {
+                       const p = arr.slice();
+                       const result = [0];
+                       const len = arr.length;
+                       let i, j, c, u, v;
+                       for (i = 0; i < len; i++) {
+                         const arrI = arr[i];
+                         if (arrI !== 0) {
+                           j = result[result.length - 1];
+                           if (arr[j] < arrI) {
+                             p[i] = j;
+                             result.push(i);
+                             continue;
+                           }
+                           (u = 0), (v = result.length - 1);
+                           while (u < v) {
+                             c = ((u + v) / 2) | 0;
+                             if (arr[result[c]] < arrI) {
+                               u = c + 1;
+                             } else {
+                               v = c;
+                             }
+                           }
+                           console.log(c, u);
+                           if (arrI < arr[result[u]]) {
+                             if (u > 0) {
+                               p[i] = result[u - 1];
+                             }
+                             result[u] = i;
+                           }
+                         }
+                       }
+                       console.log(result);
+                       u = result.length;
+                       v = result[result.length - 1];
+                       while (--u > 0) {
+                         result[u] = v;
+                         v = p[v];
+                       }
+                       return result;
+                     }
+                     console.log(getSequence([5, 2, 6, 3, 10, 12]));
+                     console.log(((11 + 8) / 2) | 0);
+                     //  const newVNode = {
+                     //       type: 'div',
+                     //       children: [
+                     //         { type: 'p', children: 'world', key: 3 },
+                     //         { type: 'p', children: '1', key: 1 },
+                     //         { type: 'p', children: '4', key: 4, },
+                     //       ]
+                     //     }
+
+                     //     const oldVNode = {
+                     //       type: 'div',
+                     //       children: [
+                     //         { type: 'p', children: '3', key: 3 },
+                     //         { type: 'p', children: '2', key: 2 },
+                     //         { type: 'p', children: '4', key: 4 },
+                     //       ]
+                     //     }
+
+                     const { effect, ref } = VueReactivity;
+                     const count = ref(1);
+                     const Text = Symbol();
+                     const Comment = Symbol();
+                     const Fragment = Symbol();
+                     function createRenderer(options) {
+                       // 通过 options 得到操作 DOM 的 API
+                       const {
+                         createElement,
+                         insert,
+                         setElementText,
+                         patchProps,
+                         createText,
+                         setText,
+                         mountComponent,
+                       } = options;
+                       function unmount(vnode) {
+                         if (vnode.type === Fragment) {
+                           vnode.children.forEach(child => unmount(child));
+                           return;
+                         } else if (typeof vnode.type === "object") {
+                           // 对于组件的卸载，本质上是要卸载组件所渲染的内容，即 subTree
+                           // vnode.shouldKeepAlive 是一个布尔值，用来标识该组件是否应该被 KeepAlive
+                           if (vnode.shouldKeepAlive) {
+                             // 对于需要被 KeepAlive 的组件，我们不应该真的卸载它，而应调用该组件的父组件，
+                             // 即 KeepAlive 组件的 _deActivate 函数使其失活
+                             vnode.keepAliveInstance._deActivate(vnode);
+                           } else {
+                             unmount(vnode.component.subTree);
+                           }
+                           return;
+                         }
+                         const parent = vnode.el.parentNode;
+                          if (parent) {
+           // 将卸载动作封装到 performRemove 函数中
+                const performRemove = () => parent.removeChild(vnode.el)
+                if (needTransition) {
+           // 如果需要过渡处理，则调用 transition.leave 钩子，
+           // 同时将 DOM 元素和 performRemove 函数作为参数传递
+           vnode.transition.leave(vnode.el, performRemove)
+                } else {
+           // 如果不需要过渡处理，则直接执行卸载操作
+           performRemove()
+           }
+           }
+
+
+                       }
+                       // 在这个作用域内定义的函数都可以访问那些 API
+                       function mountElement(vnode, container, anchor) {
+                         const el = (vnode.el = createElement(vnode.type));
+                         if (typeof vnode.children == "string") {
+                           setElementText(el, vnode.children);
+                         } else if (Array.isArray(vnode.children)) {
+                           vnode.children.forEach(child => {
+                             patch(null, child, el);
+                           });
+                         }
+                         if (vnode.props) {
+                           for (const key in vnode.props) {
+                             patchProps(el, key, null, vnode.props[key]);
+                           }
+                         }
+                          // 判断一个 VNode 是否需要过渡
+                const needTransition = vnode.transition
+                if (needTransition) {
+                // 调用 transition.beforeEnter 钩子，并将 DOM 元素作为参数传递
+                vnode.transition.beforeEnter(el)
+
+                        }        insert(el, container, anchor);
+                if (needTransition) {
+                // 调用 transition.enter 钩子，并将 DOM 元素作为参数传递
+                vnode.transition.enter(el)
+                }
+                }
+                       }
+                       function patchElement(n1, n2) {
+                         const el = (n2.el = n1.el);
+                         const oldProps = n1.props;
+                         const newProps = n2.props;
+                         for (const key in newProps) {
+                           if (oldProps[key] !== newProps[key]) {
+                             patchProps(el, key, oldProps[key], newProps[key]);
+                           }
+                         }
+                         for (const key in oldProps) {
+                           if (!(key in newProps)) {
+                             patchProps(el, key, oldProps[key], null);
+                           }
+                         }
+                         patchChildren(n1, n2, el);
+                       }
+                       function patchKeyedChildren(n1, n2, container) {
+                         const newChildren = n2.children;
+                         const oldChildren = n1.children;
+                         let j = 0;
+                         let oldVNode = oldChildren[j];
+                         let newVNode = newChildren[j];
+                         console.log(newVNode.key);
+                         while (oldVNode.key === newVNode.key) {
+                           patch(oldVNode, newVNode, container);
+                           j++;
+                           oldVNode = oldChildren[j];
+                           newVNode = newChildren[j];
+                           // 自己的添加处理
+                           if (oldVNode === undefined || newVNode === undefined) break;
+                         }
+                         let oldEnd = oldChildren.length - 1;
+                         let newEnd = newChildren.length - 1;
+                         oldVNode = oldChildren[oldEnd];
+                         newVNode = newChildren[newEnd];
+                         while (oldVNode.key === newVNode.key) {
+                           patch(oldVNode, newVNode, container);
+                           oldEnd--;
+                           newEnd--;
+                           oldVNode = oldChildren[oldEnd];
+                           newVNode = newChildren[newEnd];
+                           // 自己的添加处理
+                           if (oldVNode === undefined || newVNode === undefined) break;
+                         }
+                         console.log(oldEnd, newEnd, j);
+                         if (j > oldEnd && newEnd >= j) {
+                           const anchorIndex = newEnd + 1;
+                           const anchor =
+                             anchorIndex < newChildren.length
+                               ? newChildren[anchorIndex].el
+                               : null;
+                           while (j <= newEnd) {
+                             patch(null, newChildren[j++], container, anchor);
+                           }
+                         } else if (j > newEnd && oldEnd >= j) {
+                           while (j <= oldEnd) {
+                             unmount(oldChildren[j++]);
+                           }
+                         } else {
+                           console.log(2213);
+                           const count = newEnd - j + 1;
+                           // source 数组存储的是新子节点在旧的一组子节点中的位置索引
+                           const source = new Array(count);
+                           source.fill(-1);
+                           const oldStart = j;
+                           const newStart = j;
+                           // 用来存储新的一组节点，节点的 key 和节点位置索引之间的映射
+                           const keyIndex = {};
+                           // 自己修改，书上是false,如果出现打补丁位置并没有修改并且新的一组节点有新增节点，就因为move是false进不去添加那个新节点
+                           //       children: [
+                           //         { type: 'p', children: '3', key: 3 },
+                           //         { type: 'p', children: '2', key: 2 },
+                           //         { type: 'p', children: '4', key: 4 },
+                           //       ]
+                           //       [  { type: 'p', children: 'world', key: 3 },
+                           //         { type: 'p', children: '1', key: 1 },
+                           //         { type: 'p', children: '4', key: 4, },]
+                           let move = true;
+                           let pos = 0;
+                           for (let i = newStart; i <= newEnd; i++) {
+                             keyIndex[newChildren[i].key] = i;
+                           }
+                           let patched = 0;
+                           for (let i = oldStart; i <= oldEnd; i++) {
+                             oldVNode = oldChildren[i];
+                             const k = keyIndex[oldVNode.key];
+                             if (patched < count) {
+                               if (typeof k != "undefined") {
+                                 newVNode = newChildren[k];
+                                 patch(oldVNode, newVNode, container);
+                                 patched++;
+                                 // 填充source数组
+                                 source[k - newStart] = i;
+                               } else {
+                                 unmount(oldVNode);
+                               }
+                               if (k < pos) {
+                                 move = true;
+                               } else {
+                                 pos = k;
+                               }
+                             } else {
+                               unmount(oldVNode);
+                             }
+                           }
+                           console.log(move);
+                           if (move) {
+                             const seq = lis(source);
+                             let s = seq.length - 1;
+                             let i = count - 1;
+
+                             for (i; i >= 0; i--) {
+                               if (source[i] === -1) {
+                                 const pos = i + newStart;
+                                 const newVNode = newChildren[pos];
+                                 const nextPos = pos + 1;
+                                 const anchor =
+                                   nextPos < newChildren.length
+                                     ? newChildren[nextPos].el
+                                     : null;
+                                 patch(null, newVNode, container, anchor);
+                               } else if (seq[s] !== i) {
+                                 const pos = i + newStart;
+                                 const newVNode = newChildren[pos];
+                                 const nextPos = pos + 1;
+                                 const anchor =
+                                   nextPos < newChildren.length
+                                     ? newChildren[nextPos].el
+                                     : null;
+                                 insert(newVNode.el, container, anchor);
+                               } else {
+                                 s--;
+                               }
+                             }
+                           }
+                         }
+                       }
+                       function patchChildren(n1, n2, container) {
+                         if (typeof n2.children === "string") {
+                           if (Array.isArray(n1.children)) {
+                             n1.children.forEach(child => unmount(child));
+                           }
+                           setElementText(container, n2.children);
+                         } else if (Array.isArray(n2.children)) {
+                           if (Array.isArray(n1.children)) {
+                             patchKeyedChildren(n1, n2, container);
+                           } else {
+                             setElementText(container, "");
+                             n2.children.forEach(child => patch(null, child, container));
+                           }
+                         } else {
+                           if (Array.isArray(n1.children)) {
+                             n1.children.forEach(child => unmount(child));
+                           } else if (typeof n1.children == "string") {
+                             setElementText(container, "");
+                           }
+                         }
+                       }
+                       function patch(n1, n2, container, anchor) {
+                         if (n1 && n1.type != n2.type) {
+                           unmount(n1);
+                           n1 = null;
+                         }
+                         const { type } = n2;
+                         if (typeof type === "string") {
+                           if (!n1) {
+                             mountElement(n2, container, anchor);
+                           } else {
+                             patchElement(n1, n2);
+                             // n1 存在，意味着打补丁，暂时省略
+                           }
+                         } else if (type === Text) {
+                           if (!n1) {
+                             const el = (n2.el = createText(n2.children));
+                             insert(el, container);
+                           } else {
+                             const el = (n2.el = n1.el);
+                             if (n2.children !== n1.children) {
+                               setText(el, n2.children);
+                             }
+                           }
+                         } else if (type === Comment) {
+                           // 处理与文本节点类似 使用document.createComment函数
+                         } else if (type === Fragment) {
+                           if (!n1) {
+                             n2.children.forEach(child => patch(null, child, container));
+                           } else {
+                             patchChildren(n1, n2, container);
+                           }
+                         } else if (typeof type === "object" && type.__isTeleport) {
+                           // 组件选项中如果存在 __isTeleport 标识，则它是 Teleport 组件，
+                           // 调用 Teleport 组件选项中的 process 函数将控制权交接出去
+                           // 传递给 process 函数的第五个参数是渲染器的一些内部方法
+                           type.process(n1, n2, container, anchor, {
+                             patch,
+                             patchChildren,
+                             unmount,
+                             move(vnode, container, anchor) {
+                               insert(
+                                 vnode.component ? vnode.component.subTree.el : vnode.el,
+                                 container,
+                                 anchor
+                               );
+                             },
+                           });
+                         } else if (typeof type === "object" || typeof type === "function") {
+                           // type 是对象 --> 有状态组件
+                           // type 是函数 --> 函数式组件
+                           // vnode.type 的值是选项对象，作为组件来处理
+                           if (!n1) {
+                             // component
+
+                             // 如果该组件已经被 KeepAlive，则不会重新挂载它，而是会调用_activate 来激活它
+                             if (n2.keptAlive) {
+                               n2.keepAliveInstance._activate(n2, container, anchor);
+                             } else {
+                               mountComponent(n2, container, anchor);
+                             }
+                           }
+                         } else {
+                           // 更新组件
+                           patchComponent(n1, n2, anchor);
+                         }
+                       }
+                     }
+                     function render(vnode, container) {
+                       if (vnode) {
+                         patch(container._vnode, vnode, container);
+                       } else {
+                         if (container._vnode) {
+                           unmount(container._vnode);
+                         }
+                       }
+                       container._vnode = vnode;
+                     }
+                     return {
+                       render,
+                     };
+
+                     // const vnode  = {
+                     //     type: 'ul',
+                     //  children: [
+                     //  {
+                     //  type: Fragment,
+                     //  children: [
+                     //  { type: 'li', children: '1' },
+                     //  { type: 'li', children: '2' },
+                     //  { type: 'li', children: '3' }
+                     //  ]
+                     //  }
+                     //  ]
+                     // 描述文本节点
+                     //  type: Text,
+                     //  children: '我是文本内容'
+                     //   }
+                     const bol = ref(false);
+                     let currentInstance = null;
+                      const Transition = {
+      name: 'Transition',
+      setup(props, { slots }) {
+      return () => {
+      const innerVNode = slots.default()
+
+      innerVNode.transition = {
+      beforeEnter(el) {
+      // 设置初始状态：添加 enter-from 和 enter-active 类
+      el.classList.add('enter-from')
+      el.classList.add('enter-active')
+      },
+      enter(el) {
+      // 在下一帧切换到结束状态
+      nextFrame(() => {
+      // 移除 enter-from 类，添加 enter-to 类
+      el.classList.remove('enter-from')
+      el.classList.add('enter-to')
+      // 监听 transitionend 事件完成收尾工作
+      el.addEventListener('transitionend', () => {
+      el.classList.remove('enter-to')
+      el.classList.remove('enter-active')
+      })
+      })
+      },
+      leave(el, performRemove) {
+      // 设置离场过渡的初始状态：添加 leave-from 和 leave-active类
+      el.classList.add('leave-from')
+      el.classList.add('leave-active')
+      // 强制 reflow，使得初始状态生效
+      document.body.offsetHeight
+      // 在下一帧修改状态
+      nextFrame(() => {
+      // 移除 leave-from 类，添加 leave-to 类
+      el.classList.remove('leave-from')
+      el.classList.add('leave-to')
+
+      // 监听 transitionend 事件完成收尾工作
+      el.addEventListener('transitionend', () => {
+      el.classList.remove('leave-to')
+      el.classList.remove('leave-active')
+      // 调用 transition.leave 钩子函数的第二个参数，完成 DOM元素的卸载
+      performRemove()
+      })
+      })
+      }
+      }
+
+      return innerVNode
+      }
+      }
+      }
+      function nextFrame(fn){
+        requestAnimationFrame(()=>{
+          requestAnimationFrame(fn)
+        })
+      }
+                     const Teleport = {
+                       __isTeleport: true,
+                       process(n1, n2, container, anchor, internals) {
+                         // 通过 internals 参数取得渲染器的内部方法
+                         const { patch } = internals;
+                         // 如果旧 VNode n1 不存在，则是全新的挂载，否则执行更新
+                         if (!n1) {
+                           // 挂载
+                           // 获取容器，即挂载点
+                           const target =
+                             typeof n2.props.to === "string"
+                               ? document.querySelector(n2.props.to)
+                               : n2.props.to;
+                           // 将 n2.children 渲染到指定挂载点即可
+                           n2.children.forEach(c => patch(null, c, target, anchor));
+                         } else {
+                           patchChildren(n1, n2, container)
+                           // 更新
+
+                            // 如果新旧 to 参数的值不同，则需要对内容进行移动
+                if (n2.props.to !== n1.props.to) {
+                // 获取新的容器
+                const newTarget = typeof n2.props.to === 'string'
+                ? document.querySelector(n2.props.to)
+                : n2.props.to
+                // 移动到新的容器
+                n2.children.forEach(c => move(c, newTarget))
+                }
+                         }
+                       },
+                     };
+                     // 该方法接收组件实例作为参数，并将该实例设置为 currentInstance
+                     function setCurrentInstance(instance) {
+                       currentInstance = instance;
+                     }
+                     function defineAsyncComponent(options) {
+                       // options 可以是配置项，也可以是加载器
+                       if (typeof options === "function") {
+                         // 如果 options 是加载器，则将其格式化为配置项形式
+                         options = {
+                           loader: options,
+                         };
+                       }
+
+                       const { loader } = options;
+
+                       let InnerComp = null;
+                       // 记录重试次数
+                       let retries = 0;
+                       // 封装 load 函数用来加载异步组件
+                       function load() {
+                         return (
+                           loader()
+                             // 捕获加载器的错误
+                             .catch(err => {
+                               // 如果用户指定了 onError 回调，则将控制权交给用户
+                               if (options.onError) {
+                                 // 返回一个新的 Promise 实例
+                                 return new Promise((resolve, reject) => {
+                                   // 重试
+                                   const retry = () => {
+                                     resolve(load());
+                                     retries++;
+                                   };
+                                   // 失败
+                                   const fail = () => reject(err);
+                                   // 作为 onError 回调函数的参数，让用户来决定下一步怎么做
+                                   options.onError(retry, fail, retries);
+                                 });
+                               } else {
+                                 throw error;
+                               }
+                             })
+                         );
+                       }
+                       return {
+                         name: "AsyncComponentWrapper",
+                         setup() {
+                           const loaded = ref(false);
+                           // 代表是否超时，默认为 false，即没有超时
+                           const timeout = ref(false);
+                           // 定义 error，当错误发生时，用来存储错误对象
+                           // 添加 catch 语句来捕获加载过程中的错误
+                           const error = shallowRef(null);
+                           // 一个标志，代表是否正在加载，默认为 false
+                           const loading = ref(false);
+
+                           let loadingTimer = null;
+                           // 如果配置项中存在 delay，则开启一个定时器计时，当延迟到时后将loading.value 设置为 true
+                           if (options.delay) {
+                             loadingTimer = setTimeout(() => {
+                               loading.value = true;
+                             }, options.delay);
+                           } else {
+                             // 如果配置项中没有 delay，则直接标记为加载中
+                             loading.value = true;
+                           }
+
+                           loader()
+                             .then(c => {
+                               InnerComp = c;
+                               loaded.value = true;
+                             })
+                             .catch(err => (error.value = err))
+                             .finally(() => {
+                               loading.value = false;
+                               clearTimeout(loadingTimer);
+                             });
+                           let timer = null;
+                           if (options.timeout) {
+                             // 如果指定了超时时长，则开启一个定时器计时
+                             timer = setTimeout(() => {
+                               // 超时后将 timeout 设置为 true
+                               timeout.value = true;
+                               // 超时后创建一个错误对象，并复制给 error.value
+                               const err = new Error(`Async component timed out after
+                          ${options.timeout}ms.`);
+                               error.value = err;
+                             }, options.timeout);
+                           }
+                           // 包装组件被卸载时清除定时器
+                           onUmounted(() => clearTimeout(timer));
+
+                           // 占位内容
+                           const placeholder = { type: Text, children: "" };
+
+                           return () => {
+                             if (loaded.value) {
+                               // 如果组件异步加载成功，则渲染被加载的组件
+                               return { type: InnerComp };
+                             } else if (error.value && options.errorComponent) {
+                               // 如果加载超时，并且用户指定了 Error 组件，则渲染该组件
+                               // 只有当错误存在且用户配置了 errorComponent 时才展示 Error组件，同时将 error 作为 props 传递
+                               return {
+                                 type: options.errorComponent,
+                                 props: { error: error.value },
+                               };
+                             } else if (loading.value && options.loadingComponent) {
+                               // 如果异步组件正在加载，并且用户指定了 Loading 组件，则渲染Loading 组件
+                               return { type: options.loadingComponent };
+                             } else {
+                               return placeholder;
+                             }
+                           };
+                         },
+                       };
+                     }
+                     function onMounted(fn) {
+                       if (currentInstance) {
+                         // 将生命周期函数添加到 instance.mounted 数组中
+                         currentInstance.mounted.push(fn);
+                       } else {
+                         console.error("onMounted 函数只能在 setup 中调用");
+                       }
+                     }
+                     // 创建一个渲染器
+                     const renderer = createRenderer({
+                       createText(text) {
+                         return document.createTextNode(text);
+                       },
+                       mountComponent(vnode, container, anchor) {
+                         // 检查是否是函数式组件
+                         const isFunctional = typeof vnode.type === "function";
+                         const componentOptions = vnode.type;
+                         if (isFunctional) {
+                           // 如果是函数式组件，则将 vnode.type 作为渲染函数，将vnode.type.props 作为 props 选项定义即可
+                           componentOptions = {
+                             render: vnode.type,
+                             props: vnode.type.props,
+                           };
+                         }
+                         // 从组件选项对象中取得组件的生命周期函数
+                         const {
+                           render,
+                           data,
+                           beforeCreate,
+                           created,
+                           beforeMount,
+                           mounted,
+                           beforeUpdate,
+                           updated,
+                         } = componentOptions;
+
+                         // 在这里调用 beforeCreate 钩子
+                         beforeCreate && beforeCreate();
+
+                         const state = data ? reactive(data()) : null;
+                         // 调用 resolveProps 函数解析出最终的 props 数据与 attrs 数据
+                         const [props, attrs] = resolveProps(propsOption, vnode.props);
+                         const instance = {
+                           state,
+
+                           // 将解析出的 props 数据包装为 shallowReactive 并定义到组件实例上
+                           props: shallowReactive(props),
+                           isMounted: false,
+                           subTree: null,
+                           slots,
+                           mounted: [],
+                           keepAliveCtx: null,
+                         };
+                         // 检查当前要挂载的组件是否是 KeepAlive 组件
+                         const isKeepAlive = vnode.type.__isKeepAlive;
+                         if (isKeepAlive) {
+                           // 在 KeepAlive 组件实例上添加 keepAliveCtx 对象
+                           instance.keepAliveCtx = {
+                             // move 函数用来移动一段 vnode
+                             move(vnode, container, anchor) {
+                               // 本质上是将组件渲染的内容移动到指定容器中，即隐藏容器中
+                               insert(vnode.component.subTree.el, container, anchor);
+                             },
+                             createElement,
+                           };
+                         }
+
+                         // 定义 emit 函数，它接收两个参数
+                         // event: 事件名称
+                         // payload: 传递给事件处理函数的参数
+                         function emit(event, ...payload) {
+                           // 根据约定对事件名称进行处理，例如 change --> onChange
+                           const eventName = `on${event[0].toUpperCase() + event.slice(1)}`;
+                           // 根据处理后的事件名称去 props 中寻找对应的事件处理函数
+                           const handler = instance.props[eventName];
+                           if (handler) {
+                             // 调用事件处理函数并传递参数
+                             handler(...payload);
+                           } else {
+                             console.error("事件不存在");
+                           }
+                         }
+                         // 直接使用编译好的 vnode.children 对象作为 slots 对象即可
+                         const slots = vnode.children || {};
+                         // 将 emit 函数添加到 setupContext 中，用户可以通过 setupContext 取得 emit 函数
+                         // setupContext，由于我们还没有讲解 emit 和 slots，所以暂时只需要attrs
+                         const setupContext = { attrs, emit, slots };
+                         // 调用 setup 函数，将只读版本的 props 作为第一个参数传递，避免用户意外地修改 props 的值，
+                         // 将 setupContext 作为第二个参数传递
+                         // 在调用 setup 函数之前，设置当前组件实例
+                         setCurrentInstance(instance);
+                         // 执行 setup 函数
+                         const setupResult = setup(
+                           shallowReadonly(instance.props),
+                           setupContext
+                         );
+                         // 在 setup 函数执行完毕之后，重置当前组件实例
+                         setCurrentInstance(null);
+                         // setupState 用来存储由 setup 返回的数据
+                         let setupState = null;
+                         // 如果 setup 函数的返回值是函数，则将其作为渲染函数
+                         if (typeof setupResult === "function") {
+                           // 报告冲突
+                           if (render)
+                             console.error("setup 函数返回渲染函数，render 选项将被忽略");
+                           // 将 setupResult 作为渲染函数
+                           render = setupResult;
+                         } else {
+                           // 如果 setup 的返回值不是函数，则作为数据状态赋值给 setupState
+                           setupState = setupResult;
+                         }
+                         vnode.component = instance;
+                         // 创建渲染上下文对象，本质上是组件实例的代理
+                         const renderContext = new Proxy(instance, {
+                           get(t, k, r) {
+                             // 取得组件自身状态与 props 数据
+                             const { state, props, slots } = t;
+                             // 当 k 的值为 $slots 时，直接返回组件实例上的 slots
+                             if (k === "$slots") return slots;
+                             // 先尝试读取自身状态数据
+                             if (state && k in state) {
+                               return state[k];
+                             } else if (k in props) {
+                               // 如果组件自身没有该数据，则尝试从props 中读取
+                               return props[k];
+                             } else if (setupState && k in setupState) {
+                               // 渲染上下文需要增加对 setupState 的支持
+                               return setupState[k];
+                             } else {
+                               console.error("不存在");
+                             }
+                           },
+                           set(t, k, v, r) {
+                             const { state, props } = t;
+                             if (state && k in state) {
+                               state[k] = v;
+                             } else if (k in props) {
+                               console.warn(
+                                 `Attempting to mutate prop "${k}". Propsare readonly.`
+                               );
+                             } else {
+                               console.error("不存在");
+                             }
+                           },
+                         });
+                         // 在这里调用 created 钩子
+                         created && created.call(state);
+
+                         effect(
+                           () => {
+                             const subTree = render.call(state, state);
+                             if (!instance.isMounted) {
+                               // 在这里调用 beforeMount 钩子
+                               beforeMount && beforeMount.call(state);
+                               patch(null, subTree, container, anchor);
+                               instance.isMounted = true;
+                               // 在这里调用 mounted 钩子
+                               mounted && mounted.call(state);
+                               // 遍历 instance.mounted 数组并逐个执行即可
+                               instance.mounted &&
+                                 instance.mounted.forEach(hook => hook.call(renderContext));
+                             } else {
+                               // 在这里调用 beforeUpdate 钩子
+                               beforeUpdate && beforeUpdate.call(state);
+                               patch(instance.subTree, subTree, container, anchor);
+                               // 在这里调用 updated 钩子
+                               updated && updated.call(state);
+                             }
+                             instance.subTree = subTree;
+                           },
+                           { scheduler: queueJob }
+                         );
+                       },
+                       patchComponent(n1, n2, anchor) {
+                         // 获取组件实例，即 n1.component，同时让新的组件虚拟节点 n2.component也指向组件实例
+                         const instance = (n2.component = n1.component);
+                         // 获取当前的 props 数据
+                         const { props } = instance;
+                         // 调用 hasPropsChanged 检测为子组件传递的 props 是否发生变化，如果没有变化，则不需要更新
+                         if (hasPropsChanged(n1.props, n2.props)) {
+                           // 调用 resolveProps 函数重新获取 props 数据
+                           const [nextProps] = resolveProps(n2.type.props, n2.props);
+                           // 更新 props
+                           for (const k in nextProps) {
+                             props[k] = nextProps[k];
+                           }
+                           // 删除不存在的 props
+                           for (const k in props) {
+                             if (!(k in nextProps)) delete props[k];
+                           }
+                         }
+                       },
+
+                       setText(el, text) {
+                         el.nodeValue = text;
+                       },
+                       createElement(tag) {
+                         return document.createElement(tag);
+                       },
+                       setElementText(el, text) {
+                         el.textContent = text;
+                       },
+                       insert(el, parent, anchor = null) {
+                         parent.insertBefore(el, anchor);
+                       },
+                       patchProps(el, key, prevValue, nextValue) {
+                         function shouldSetAsProps(el, key, value) {
+                           if (key === "form" && el.tagName === "INPUT") return false;
+                           return key in el;
+                         }
+
+                         if (/^on/.test(key)) {
+                           let invokers = el._vei || (el._vei = {});
+                           let invoker = invokers[key];
+                           const name = key.slice(2).toLowerCase();
+                           if (nextValue) {
+                             if (!invoker) {
+                               invoker = el._vei[key] = e => {
+                                 if (e.timeStamp < invoker.attached) return;
+                                 if (Array.isArray(invoker.value)) {
+                                   invoker.value.forEach(fn => fn(e));
+                                 } else {
+                                   invoker.value(e);
+                                 }
+                               };
+                               invoker.value = nextValue;
+                               invoker.attached = performance.now();
+                               el.addEventListener(name, invoker);
+                             } else {
+                               invoker.value = nextValue;
+                             }
+                           } else if (invoker) {
+                             el.removeEventListener(name, invoker);
+                           }
+                         } else if (shouldSetAsProps(el, key, nextValue)) {
+                           const type = typeof el[key];
+                           if (type == "boolean" && nextValue === "") {
+                             el[key] = true;
+                           } else {
+                             el[key] = nextValue;
+                           }
+                         } else {
+                           el.setAttribute(key, nextValue);
+                         }
+                       },
+                     });
+                     const KeepAlive = {
+                       // KeepAlive 组件独有的属性，用作标识
+                       __isKeepAlive: true,
+                       props: {
+                         include: RegExp,
+                         exclude: RegExp,
+                       },
+                       setup(props, { slots }) {
+                         // 创建一个缓存对象
+                         // key: vnode.type
+                         // value: vnode
+                         const cache = new Map();
+                         // 当前 KeepAlive 组件的实例
+                         const instance = currentInstance;
+                         // 对于 KeepAlive 组件来说，它的实例上存在特殊的 keepAliveCtx 对象，该对象由渲染器注入
+                         // 该对象会暴露渲染器的一些内部方法，其中 move 函数用来将一段 DOM 移动到另一个容器中
+                         const { move, createElement } = instance.keepAliveCtx;
+
+                         // 创建隐藏容器
+                         const storageContainer = createElement("div");
+
+                         // KeepAlive 组件的实例上会被添加两个内部函数，分别是 _deActivate和 _activate
+                         // 这两个函数会在渲染器中被调用
+                         instance._deActivate = vnode => {
+                           move(vnode, storageContainer);
+                         };
+                         instance._activate = (vnode, container, anchor) => {
+                           move(vnode, container, anchor);
+                         };
+
+                         return () => {
+                           // KeepAlive 的默认插槽就是要被 KeepAlive 的组件
+                           let rawVNode = slots.default();
+                           // 如果不是组件，直接渲染即可，因为非组件的虚拟节点无法被 KeepAlive
+                           if (typeof rawVNode.type !== "object") {
+                             return rawVNode;
+                           }
+                           // 获取“内部组件”的 name
+                           const name = rawVNode.type.name;
+                           // 对 name 进行匹配
+                           if (
+                             name &&
+                             // 如果 name 无法被 include 匹配
+                             ((props.include && !props.include.test(name)) ||
+                               // 或者被 exclude 匹配
+                               (props.exclude && props.exclude.test(name)))
+                           ) {
+                             // 则直接渲染“内部组件”，不对其进行后续的缓存操作
+                             return rawVNode;
+                           }
+                           // 在挂载时先获取缓存的组件 vnode
+                           const cachedVNode = cache.get(rawVNode.type);
+                           if (cachedVNode) {
+                             // 如果有缓存的内容，则说明不应该执行挂载，而应该执行激活
+                             // 继承组件实例
+                             rawVNode.component = cachedVNode.component;
+                             // 在 vnode 上添加 keptAlive 属性，标记为 true，避免渲染器重新挂载它
+                             rawVNode.keptAlive = true;
+                           } else {
+                             // 如果没有缓存，则将其添加到缓存中，这样下次激活组件时就不会执行新的挂载动作了
+                             cache.set(rawVNode.type, rawVNode);
+                           }
+
+                           // 在组件 vnode 上添加 shouldKeepAlive 属性，并标记为 true，避免渲染器真的将组件卸载
+                           rawVNode.shouldKeepAlive = true;
+                           // 将 KeepAlive 组件的实例也添加到 vnode 上，以便在渲染器中访问
+                           rawVNode.keepAliveInstance = instance;
+
+                           // 渲染组件 vnode
+                           return rawVNode;
+                         };
+                       },
+                     };
+                     function hasPropsChanged(prevProps, nextProps) {
+                       const nextKeys = Object.keys(nextProps);
+                       // 如果新旧 props 的数量变了，则说明有变化
+                       if (nextKeys.length !== Object.keys(prevProps).length) {
+                         return true;
+                       }
+                       // 只有
+                       for (let i = 0; i < nextKeys.length; i++) {
+                         const key = nextKeys[i];
+                         // 有不相等的 props，则说明有变化
+                         if (nextProps[key] !== prevProps[key]) return true;
+                       }
+                       return false;
+                     }
+                     // resolveProps 函数用于解析组件 props 和 attrs 数据
+                     function resolveProps(options, propsData) {
+                       const props = {};
+                       const attrs = {};
+                       // 遍历为组件传递的 props 数据
+                       for (const key in propsData) {
+                         if (key in options || key.startsWith("on")) {
+                           // 以字符串 on 开头的 props，无论是否显式地声明，都将其添加到 props数据中，而不是添加到 attrs 中
+                           // 如果为组件传递的 props 数据在组件自身的 props 选项中有定义，则将其视为合法的 props
+                           props[key] = propsData[key];
+                         } else {
+                           // 否则将其作为 attrs
+                           attrs[key] = propsData[key];
+                         }
+                       }
+
+                       // 最后返回 props 与 attrs 数据
+                       return [props, attrs];
+                     }
+                     // 任务缓存队列，用一个 Set 数据结构来表示，这样就可以自动对任务进行去重
+                     const queue = new Set();
+                     // 一个标志，代表是否正在刷新任务队列
+                     let isFlushing = false;
+                     // 创建一个立即 resolve 的 Promise 实例
+                     const p = Promise.resolve();
+
+                     // 调度器的主要函数，用来将一个任务添加到缓冲队列中，并开始刷新队列
+                     function queueJob(job) {
+                       // 将 job 添加到任务队列 queue 中
+                       queue.add(job);
+                       // 如果还没有开始刷新队列，则刷新之
+                       if (!isFlushing) {
+                         // 将该标志设置为 true 以避免重复刷新
+                         isFlushing = true;
+                         // 在微任务中刷新缓冲队列
+                         p.then(() => {
+                           try {
+                             // 执行任务队列中的任务
+                             queue.forEach(job => job());
+                           } finally {
+                             // 重置状态
+                             isFlushing = false;
+                             queue.clear = 0;
+                           }
+                         });
+                       }
+                     }
+                     //  const newVNode = {
+                     //       type: 'div',
+                     //       children: [
+                     //         { type: 'p', children: 'world', key: 3 },
+                     //       { type: 'p', children: '22', key:31 },
+                     //        { type: 'p', children: '999111', key: 9},
+                     //                { type: 'p', children: '101dasd010', key:10 },
+                     //        { type: 'p', children: '11asdas111', key: 11},
+                     //             { type: 'p', children: '88111', key:8 },
+
+                     //        { type: 'p', children: '2', key: 2 },
+
+                     //       ]
+                     //     }
+
+                     //     const oldVNode = {
+                     //       type: 'div',
+                     //       children: [
+
+                     //         { type: 'p', children: '3', key: 3 },
+                     //    { type: 'p', children: '2a2', key:21 },
+                     //       { type: 'p', children: '88', key:8 },
+                     //                 { type: 'p', children: '101010', key:10 },
+
+                     //        { type: 'p', children: '999', key: 9},
+
+                     //        { type: 'p', children: '11111', key: 11},
+                     //        { type: 'p', children: '2', key: 2 },
+
+                     //       ]
+                     //     }
+
+                     // 首次挂载
+                     // renderer.render(oldVNode, document.querySelector('#app'))
+                     // setTimeout(() => {
+                     //   // 1 秒钟后更新
+                     //   renderer.render(newVNode, document.querySelector('#app'))
+                     // }, 1000);
+
+                     // function normalizeClass(classes) {
+                     //   if(!Array.isArray(classes)) classes = [classes];
+                     //   return classes
+                     //     .map((cls) => {
+                     //       if (typeof cls === 'string') {
+                     //         return cls;
+                     //       }
+                     //       return Object.entries(cls)
+                     //         .filter(([key, val]) => val)
+                     //         .map(([key]) => key);
+                     //     })
+                     //     .flat()
+                     //     .join(' ');
+                     // }
+                     // // 示例调用
+                     // const classes1 ='foo arr';
+                     // console.log(normalizeClass(classes1));
+    </script>
+  </body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    // 元数据不具有响应式不要操作元数据。
+    const bucket = new WeakMap();
+  const data = { foo: 1, bar: true }
+    let activeEffect;
+    const effectStack =  [];
+    const jobQueue = new Set();
+    let isFlushing = false;
+    const p  = Promise.resolve();
+
+    function flushJob(){
+      if(isFlushing) return;
+      isFlushing = true;
+      p.then(()=>{
+        jobQueue.forEach(job => job())
+      }).finally(()=>{
+        isFlushing = false;
+      })
+    }
+    // function effect(fn){
+    //   activeEffect = fn;
+    //   fn();
+    // }
+    function effect(fn,options = {}){
+      const effectFn =  () =>{
+        cleanup(effectFn)
+         activeEffect = effectFn;
+         effectStack.push(effectFn)
+          fn();
+           effectStack.pop()
+           activeEffect = effectStack[effectStack.length-1]
+      }
+      effectFn.deps = [];
+      effectFn.options = options
+      effectFn();
+    }
+    function cleanup(effectFn){
+      for(let i = 0;i < effectFn.deps.length;i++){
+        const deps = effectFn.deps[i];
+        deps.delete(effectFn)
+      }
+      effectFn.deps.length = 0;
+    }
+   function track(target,key){
+       if(!activeEffect) return;
+        let depsMap  = bucket.get(target);
+        if(!depsMap){
+          bucket.set(target,depsMap = new Map())
+        }
+        let deps = depsMap.get(key);
+
+        if(!deps){
+          depsMap.set(key,deps = new Set())
+        }
+        deps.add(activeEffect);
+        activeEffect.deps.push(deps);
+   }
+    //  document.body.innerText = data.text;
+     function trigger(target,key){
+      
+       const depsMap = bucket.get(target);
+        if(!depsMap) return;
+        const effects  = depsMap.get(key);
+        const effectsToRun = new Set();
+        effects&&effects.forEach(effectFn =>{
+          if(effectFn!==activeEffect){
+            effectsToRun.add(effectFn);
+          }
+        })
+       effectsToRun.forEach(fn => {
+          if(fn.options.scheduler){
+            fn.options.scheduler(fn) 
+          } else{
+             fn()
+          } 
+          
+          
+       });
+       
+     
+     }
+     const obj = new Proxy(data,{
+      get(target,key){
+
+        track(target,key)
+        return Reflect.get(target,key);
+      },
+      set(target,key,value,receiver){
+        
+        target[key] = value
+        trigger(target,key)
+        // Reflect.set(target, key, value, receiver)
+        // return Reflect.set(target, key, value, receiver);
+      }
+     })
+    effect(function effectFn1() {
+      console.log(obj.foo)
+ },{
+  scheduler(fn){
+
+    jobQueue.add(fn)
+
+    flushJob()
+  }
+ })
+  effect(function effectFn1() {
+      console.log(111,obj.foo)
+ },{
+  scheduler(fn){
+
+    jobQueue.add(fn)
+
+    flushJob()
+  }
+ })
+obj.foo++
+obj.foo++
+// setTimeout(()=>{
+//    obj.foo = 11
+// },1500)
+    //   effect(()=>{
+    //     console.log(11)
+    //     document.body.innerText = obj.ok ? obj.text : 'not'
+    //   })
+
+    //  setTimeout(()=>{
+    //   obj.ok = false
+    //  },1000)
+    //   setTimeout(()=>{
+    //   obj.text = 'sda'
+    //  },1500)
+  </script>
+</body>
+</html>

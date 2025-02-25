@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+     var monotoneIncreasingDigits = function(n) {
+        n = n.toString()
+    n = n.split('').map(item => {
+        return +item
+    })
+    let flag = Infinity
+    for(let i = n.length - 1; i > 0; i--) {
+        // debugger
+        const a = n [i - 1];
+        const b = n[i]
+        if(a > b) {
+            flag = i
+            n[i - 1] = n[i - 1] - 1
+            n[i] = 9
+        }
+    }
+
+  
+
+    n = n.join('')
+    return +n
+};
+
+ const arr =  monotoneIncreasingDigits(100)
+console.log(1222,new Array(5).fill(0))
+    </script>
+    <script>
+
+        // withdefault 
+        // 1、 在响应式数据obj上设置一个不存在的属性时：不应该触发其他属性的副作用，所以代理对象obj 操作属性 key 以及副作用要有
+        // 要有对应关系
+        // 2、当副作用函数是类似于document.body.innerText = obj.ok ? obj.text : 'not', obj.ok为false时， obj.text不应该有副作用函数，应该清除
+        // 所以有了effectFn.deps 副作用函数与依赖之间相互交差, 需要注意循环引用，因为清空之后再次执行fn会再次收集依赖，就导致死循环
+        // 3、 effect嵌套 activeEffect同一个时刻只有一个，外层添加的是里面的副作用函数,在内层依赖添加完内层副作用，要回退到外层副作用函数给外层依赖收集
+        //     effect(function effectFn1() {
+        // console.log('effectFn1 执行')
+        // effect(function effectFn2() {
+        // console.log('effectFn2 执行')
+        // // 在 effectFn2 中读取 obj.bar 属性
+        // temp2 = obj.bar
+        // })
+        // // 在 effectFn1 中读取 obj.foo 属性
+        // temp1 = obj.foo
+        // })                 
+        // 4、在副作用函数中赋值会导致重新触发trigger，例如自增 a++，所以trigger函数加个判断，如果activeEffect == 当前触发的函数就不执行了            
+        // 5、设置scheduler 手动执行副作用函数，lazy避免一开始就调用副作用直接返回副作用手动执行，配合副作用返回的值可以实现computed,
+        // 加个dirty value实现缓存，在每次依赖性改变就会调用scheduler，说明需要重新计算，但本身计算属性不是依赖性所以要手动track和trigger
+        // 6、同样利用scheduler来执行自己的逻辑，watch执行回调cb，
+        // 设置immediate立即执行cb，新旧值都是由副作用函数的返回值来的，同时flush设置可以选择执行时机
+        // 增加一个onInvalidate函数来收集用户的过期函数，在执行前调用这个函数    
+        // 如果一个对象有属性是个函数获取另一个属性 例如getAge属性获取this.age 那么在代理中使用target[key],读取getAge并不会把age属性依赖收集
+        // 因为this指向原对象，所以要用reflect。get，它第三个参数是receiver，指定proxy对象为receiver那么this就是proxy会把age属性进行依赖收集
+        // 7、 in 操作符可以用hasProperty判断,而for in可以用ownKeys来收集依赖，但是没有对应的key所以需要手动添加一个key在
+        // 添加或者删除属性的时候触发调用副作用函数。删除属性可以用deleteProperty来收集依赖
+        //8、当对象以及原型对象都是proxy对象，如果子对象访问一个不存在而在原型对象存在的属性那么这两个对象都会收集这个依赖
+        // 设置的时候会触发两次，为了避免在trigger触发两次依赖函数，在set中访问raw属性，那么会触发get函数直接返回target.parent的receiver是子对象的receiver而不是它自己的
+        // receiver对象，所以判断相等才触发依赖，这样可以避免多次调用  154页
+
+        // 9、 如果设置的索引值大于数组当前的
+        // 长度，那么要更新数组的 length 属性。所以当通过索引设置元素值
+        // 时，可能会隐式地修改 length 的属性值。因此在触发响应时，也应
+        // 该触发与 length 属性相关联的副作用函数重新执行
+
+        // 10、 当修改 length 属性值时，只有那些索引值大于或等于新的 length
+        // 属性值的元素才需要触发响应
+
+        // 11、arr.includes(arr[0])。其中，arr[0] 得到的是一个代理对象，
+        // 而在 includes 方法内部也会通过 arr 访问数组元素，从而也得到一
+        // 个代理对象，问题是这两个代理对象是不同的。这是因为每次调用
+        // reactive 函数时都会创建一个新的代理对象 解决： 定义一个 Map 实例，存储原始对象到代理对象的映射
+
+        // 12、把原始对象作为参数传递给includes 方法会返回false 因为 includes 内部的 this 指向
+        // 的是代理对象 arr，并且在获取数组元素时得到的值也是代理对象，
+        // 所以拿原始对象 obj 去查找肯定找不到,需要重新数组
+
+        // 13 当调用数组的 push 方法向数组中添加元素时，既会读取数组的 length 属性值,
+        //    如果有两个副作用里面有用push方法就会导致死循环,     只要我们“屏蔽”对 length 属性的读取，从而避免在它与副作用
+        // 函数之间建立响应联系
+        const data = { text: 'hello world', ok: true, foo: 0 };
+        const arrayInstrumentations = {}
+
+            ;['includes', 'indexOf', 'lastIndexOf'].forEach(method => {
+                const originMethod = Array.prototype[method]
+                arrayInstrumentations[method] = function (...args) {
+                    // this 是代理对象receiver，先在代理对象中查找，将结果存储到 res 中
+                    let res = originMethod.apply(this, args)
+
+                    if (res === false || res === -1) {
+                        // res 为 false 说明没找到，通过 this.raw 拿到原始数组，再去其中查找，并更新 res 值
+                        res = originMethod.apply(this.raw, args)
+                    }
+                    // 返回最终结果
+                    return res
+                }
+            })
+        let shouldTrack = true
+            // 重写数组的 push、pop、shift、unshift 以及 splice 方法
+            ;['push', 'pop', 'shift', 'unshift', 'splice'].forEach(method => {
+                const originMethod = Array.prototype[method]
+                arrayInstrumentations[method] = function (...args) {
+                    shouldTrack = false
+                    let res = originMethod.apply(this, args)
+                    shouldTrack = true
+                    return res
+                }
+            })
+        const ITERATE_KEY = Symbol()
+        const bucket = new WeakMap()
+        const effectStack = []
+        // 用一个全局变量存储被注册的副作用函数
+        let activeEffect
+        // effect 函数用于注册副作用函数
+        function effect(fn, options = {}) {
+
+            const effectFn = () => {
+                // 当 effectFn 执行时，将其设置为当前激活的副作用函数
+                cleanup(effectFn)
+                activeEffect = effectFn
+                // console.log('fnnnnnnn',fn)
+                effectStack.push(effectFn)
+                const res = fn()
+                effectStack.pop()
+                activeEffect = effectStack[effectStack.length - 1]
+                return res;
+            }
+            console.log(effectFn.deps)
+            // activeEffect.deps 用来存储所有与该副作用函数相关联的依赖集合
+            effectFn.options = options // 新增
+            effectFn.deps = []
+            // 执行副作用函数
+            if (!options.lazy) {
+                effectFn()
+            }
+            return effectFn;
+        }
+
+
+
+        function cleanup(effectFn) {
+            // 遍历 effectFn.deps 数组
+            // console.log('sasssss',effectFn.deps.length)
+            for (let i = 0; i < effectFn.deps.length; i++) {
+                // deps 是依赖集合
+                const deps = effectFn.deps[i]
+                console.log('dfasdasd', deps)
+                // 将 effectFn 从依赖集合中移除
+                deps.delete(effectFn)
+            }
+            // console.log('sasssss',effectFn.deps.length)
+            // 最后需要重置 effectFn.deps 数组
+            effectFn.deps.length = 0
+        }
+        function track(target, key) {
+            // 没有 activeEffect，直接 return
+            if (!activeEffect || !shouldTrack) return target[key]
+            // 根据 target 从“桶”中取得 depsMap，它也是一个 Map 类型：key -->
+            let depsMap = bucket.get(target)
+            // 如果不存在 depsMap，那么新建一个 Map 并与 target 关联
+            if (!depsMap) {
+                bucket.set(target, (depsMap = new Map()))
+            }
+            // 再根据 key 从 depsMap 中取得 deps，它是一个 Set 类型，
+            // 里面存储着所有与当前 key 相关联的副作用函数：effects
+            let deps = depsMap.get(key)
+            // 如果 deps 不存在，同样新建一个 Set 并与 key 关联
+            if (!deps) {
+                depsMap.set(key, (deps = new Set()))
+            }
+            // 最后将当前激活的副作用函数添加到“桶”里
+            deps.add(activeEffect)
+            // deps 就是一个与当前副作用函数存在联系的依赖集合
+            // 将其添加到 activeEffect.deps 数组中
+            activeEffect.deps.push(deps) // 新增
+            // console.log('222222',activeEffect,key)
+        }
+        // 定义一个 Map 实例，存储原始对象到代理对象的映射
+        const reactiveMap = new Map()
+        function reactive(obj) {
+            // 优先通过原始对象 obj 寻找之前创建的代理对象，如果找到了，直接返回已有的代理对象
+            const existionProxy = reactiveMap.get(obj)
+            if (existionProxy) return existionProxy
+
+            // 否则，创建新的代理对象
+            const proxy = createReactive(obj)
+            // 存储到 Map 中，从而避免重复创建
+            reactiveMap.set(obj, proxy)
+
+            return proxy
+        }
+        function ref(val) {
+            const wrapper = {
+                value: val
+            }
+            // 使用 Object.defineProperty 在 wrapper 对象上定义一个不可枚举的属性 __v_isRef，并且值为 true
+            Object.defineProperty(wrapper, '__v_isRef', {
+                value: true
+            })
+
+            return reactive(wrapper)
+        }
+
+        function toRef(obj, key) {
+            const wrapper = {
+                get value() {
+                    return obj[key]
+                },
+                // 允许设置值
+                set value(val) {
+                    obj[key] = val
+                }
+            }
+
+            Object.defineProperty(wrapper, '__v_isRef', {
+                value: true
+            })
+
+            return wrapper
+        }
+
+        function toRefs(obj) {
+            const ret = {}
+            // 使用 for...in 循环遍历对象
+            for (const key in obj) {
+                // 逐个调用 toRef 完成转换
+                ret[key] = toRef(obj, key)
+            }
+            return ret
+        }
+        function shallowReactive(obj) {
+            return createReactive(obj, true)
+        }
+        function readonly(obj) {
+            return createReactive(obj, false, true /* 只读 */)
+        }
+        function shallowReadonly(obj) {
+            return createReactive(obj, true /* shallow */, true)
+        }
+        function createReactive(data, isShallow = false, isReadonly = false) {
+            return new Proxy(data, {
+                // 拦截读取操作
+                get(target, key, receiver) {
+
+
+                    if (key === 'raw') return target;
+                    // 如果操作的目标对象是数组，并且 key 存在于arrayInstrumentations 上，
+                    // 那么返回定义在 arrayInstrumentations 上的值
+                    if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
+                        return Reflect.get(arrayInstrumentations, key, receiver)
+                    }
+                    if (!isReadonly && typeof key !== 'symbol') {
+                        track(target, key)
+                    }
+                    // 得到原始值结果
+                    const res = Reflect.get(target, key, receiver)
+                    if (isShallow) {
+                        return res
+                    }
+                    if (typeof res === 'object' && res !== null) {
+                        // 如果数据为只读，则调用 readonly 对值进行包装
+                        return isReadonly ? readonly(res) : reactive(res)
+                    }
+                    // 返回 res
+                    return res
+                },
+                set(target, key, newVal, receiver) {
+                    // 如果是只读的，则打印警告信息并返回
+                    if (isReadonly) {
+                        console.warn(`属性 ${key} 是只读的`)
+                        return true
+                    }
+                    const oldVal = target[key]
+                    // 如果属性不存在，则说明是在添加新的属性，否则是设置已有属性
+                    const type = Array.isArray(target)
+                        // 如果代理目标是数组，则检测被设置的索引值是否小于数组长度，
+                        // 如果是，则视作 SET 操作，否则是 ADD 操作
+                        ? Number(key) < target.length ? 'SET' : 'ADD'
+                        : Object.prototype.hasOwnProperty.call(target, key) ?
+                            'SET' : 'ADD'
+
+                    // 设置属性值
+                    const res = Reflect.set(target, key, newVal, receiver)
+
+                    // 将 type 作为第三个参数传递给 trigger 函数
+                    // 比较新值与旧值，只要当不全等的时候才触发响应
+                    var a = target === receiver.raw
+                    if (a) {
+                        if (oldVal !== newVal && (oldVal === oldVal || newVal ===
+                            newVal)) {
+                            trigger(target, key, type, newVal)
+                        }
+                    }
+                    return res
+                },
+                // 劫持has操作 收集依赖
+                has(target, key) {
+                    track(target, key)
+                    return Reflect.has(target, key)
+                },
+                // 收集for in 依赖
+                ownKeys(target) {
+                    // 如果操作目标 target 是数组，则使用 length 属性作为 key 并建立响应联系
+                    track(target, Array.isArray(target) ? 'length' :
+                        ITERATE_KEY)
+                    return Reflect.ownKeys(target)
+                },
+                deleteProperty(target, key) {
+                    // 如果是只读的，则打印警告信息并返回
+                    if (isReadonly) {
+                        console.warn(`属性 ${key} 是只读的`)
+                        return true
+                    }
+                    // 检查被操作的属性是否是对象自己的属性
+                    const hadKey = Object.prototype.hasOwnProperty.call(target, key)
+                    // 使用 Reflect.deleteProperty 完成属性的删除
+                    const res = Reflect.deleteProperty(target, key)
+
+                    if (res && hadKey) {
+                        // 只有当被删除的属性是对象自己的属性并且成功删除时，才触发更新
+                        trigger(target, key, 'DELETE')
+                    }
+
+                    return res
+                }
+            })
+        }
+        const obj = reactive(data)
+        function trigger(target, key, type) {
+            const depsMap = bucket.get(target)
+            if (!depsMap) return
+            const effects = depsMap.get(key)
+            console.log('ssssssss',key)
+            // 取得与 ITERATE_KEY 相关联的副作用函数
+            const iterateEffects = depsMap.get(ITERATE_KEY)
+            const effectsToRun = new Set();
+            effects && effects.forEach(effectFn => {
+                if (effectFn !== activeEffect) {
+                    effectsToRun.add(effectFn)
+                }
+            })
+            // 当操作类型为 ADD 并且目标对象是数组时，应该取出并执行那些与 length属性相关联的副作用函数
+            if (type === 'ADD' && Array.isArray(target)) {
+                // 取出与 length 相关联的副作用函数
+                const lengthEffects = depsMap.get('length')
+                // 将这些副作用函数添加到 effectsToRun 中，待执行
+                lengthEffects && lengthEffects.forEach(effectFn => {
+                    if (effectFn !== activeEffect) {
+                        effectsToRun.add(effectFn)
+                    }
+                })
+            }
+            // 如果操作目标是数组，并且修改了数组的 length 属性
+            if (Array.isArray(target) && key === 'length') {
+                // 对于索引大于或等于新的 length 值的元素，
+                // 需要把所有相关联的副作用函数取出并添加到 effectsToRun 中待执行
+                depsMap.forEach((effects, key) => {
+                    if (key >= newVal) {
+                        effects.forEach(effectFn => {
+                            if (effectFn !== activeEffect) {
+                                effectsToRun.add(effectFn)
+                            }
+                        })
+                    }
+                })
+            }
+            // 将与 ITERATE_KEY 相关联的副作用函数也添加到 effectsToRun
+            // 只有当操作类型为 'ADD' 时，才触发与 ITERATE_KEY 相关联的副作用函数重新执行
+            if (type === 'ADD' || type === 'DELETE') {
+                const iterateEffects = depsMap.get(ITERATE_KEY)
+                iterateEffects && iterateEffects.forEach(effectFn => {
+                    if (effectFn !== activeEffect) {
+                        effectsToRun.add(effectFn)
+                    }
+                })
+            }
+
+            effectsToRun.forEach(effectFn => {
+                if (effectFn.options.scheduler) { // 新增
+                  
+                    effectFn.options.scheduler(effectFn) // 新增
+                } else {
+                    // 否则直接执行副作用函数（之前的默认行为）
+                    effectFn() // 新增
+                }
+            });
+            // const effectsToRun = new Set(effects) 
+            // effectsToRun.forEach(effectFn => effectFn())
+        }
+        let temp1, temp2
+
+        // effectFn1 嵌套了 effectFn2
+        //     effect(function effectFn1() {
+
+        //         console.log('effectFn1 执行')
+
+        //         effect(function effectFn2() {
+        //             console.log('effectFn2 执行')
+        //             // 在 effectFn2 中读取 obj.bar 属性
+        //             temp2 = obj.bar
+        //         })
+        //         // 在 effectFn1 中读取 obj.foo 属性
+        //         temp1 = obj.foo
+        //     })
+        //     setTimeout(() => {
+        //         obj.foo = false;
+        //   }, 1000);
+        // effect(() => {
+        //     document.body.innerText = obj.ok ? obj.text : "not";
+        // })
+
+        // // 定义一个任务队列
+        // const jobQueue = new Set()
+        // // 使用 Promise.resolve() 创建一个 promise 实例，我们用它将一个任务添加到微任务队列
+        // const p = Promise.resolve()
+
+        // // 一个标志代表是否正在刷新队列
+        // let isFlushing = false
+        // function flushJob() {
+        //     // 如果队列正在刷新，则什么都不做
+        //     if (isFlushing) return
+        //     // 设置为 true，代表正在刷新
+        //     isFlushing = true
+        //     // 在微任务队列中刷新 jobQueue 队列
+        //     p.then(() => {
+        //         jobQueue.forEach(job => job())
+        //     }).finally(() => {
+        //         // 结束后重置 isFlushing
+        //         isFlushing = false
+        //     })
+        // }
+        // effect(() => {
+        //     console.log(obj.foo)
+        // }, {
+        //     scheduler(fn) {
+        //         // 每次调度时，将副作用函数添加到 jobQueue 队列中
+        //         jobQueue.add(fn)
+        //         // 调用 flushJob 刷新队列
+        //         flushJob()
+        //     }
+        // })
+
+        // obj.foo++
+        // obj.foo++
+
+        function computed(getter) {
+            let value;
+            let dirty = true;
+            // 把 getter 作为副作用函数，创建一个 lazy 的 effect
+            const effectFn = effect(getter, {
+                lazy: true,
+                scheduler() {
+                    dirty = true;
+                    trigger(obj, 'value')
+                }
+            })
+
+            const obj = {
+                // 当读取 value 时才执行 effectFn
+                get value() {
+                    if (dirty) {
+                        value = effectFn();
+                        dirty = false;
+                    }
+                    track(obj, 'value')
+                    return value;
+                }
+            }
+
+            return obj
+        }
+        const test = reactive({a:1,b:2});
+        
+        const sum = computed(() => test.a + test.b)
+        console.log(sum.value)
+        test.b = 3
+        console.log(sum.value)
+        // watch 函数接收两个参数，source 是响应式数据，cb 是回调函数 
+        function watch(source, cb) {
+            // 定义 getter 
+            let getter
+            // 如果 source 是函数，说明用户传递的是 getter，所以直接把 source 赋值给 getter 
+            if (typeof source === 'function') {
+                getter = source
+            } else {
+                // 否则按照原来的实现调用 traverse 递归地读取 
+                getter = () => traverse(source)
+            }
+            let oldValue, newValue;
+            // cleanup 用来存储用户注册的过期回调 
+            let cleanup
+            // 定义 onInvalidate 函数 
+            function onInvalidate(fn) {
+                // 将过期回调存储到 cleanup 中 
+                cleanup = fn
+            }
+            // 提取 scheduler 调度函数为一个独立的 job 函数 
+            const job = () => {
+                newValue = effectFn()
+                // 在调用回调函数 cb 之前，先调用过期回调 
+                if (cleanup) {
+                    cleanup()
+                }
+                cb(newValue, oldValue, onInvalidate)
+                oldValue = newValue
+
+            }
+            const effectFn = effect(
+                // 触发读取操作，从而建立联系 
+                () => getter(),
+                {
+                    lazy: true,
+                    scheduler: () => {
+                        // 在调度函数中判断 flush 是否为 'post'，如果是，将其放到微任务队列中执行 
+                        if (options.flush === 'post') {
+                            const p = Promise.resolve()
+                            p.then(job)
+                        } else {
+                            job()
+                        }
+                    }
+                }
+            )
+            if (options.immediate) {
+                // 当 immediate 为 true 时立即执行 job，从而触发回调执行 
+                job()
+            } else {
+                oldValue = effectFn()
+            }
+
+        }
+        function traverse(value, seen = new Set()) {
+            // 如果要读取的数据是原始值，或者已经被读取过了，那么什么都不做 
+            if (typeof value !== 'object' || value === null || seen.has(value)) return
+            // 将数据添加到 seen 中，代表遍历地读取过了，避免循环引用引起的死循环 
+            seen.add(value)
+            // 暂时不考虑数组等其他结构 
+            // 假设 value 就是一个对象，使用 for...in 读取对象的每一个值，并递归地调用 traverse 进行处理 
+            for (const k in value) {
+                traverse(value[k], seen)
+            }
+
+            return value
+        }
+    //     const c = {}
+    //     const proto = { bar: 1 }
+    //     const child = reactive(c)
+    //     const parent = reactive(proto)
+    //     // // 使用 parent 作为 child 的原型
+    //     Object.setPrototypeOf(child, parent)
+
+
+    //     effect(() => {
+    //         console.log(child.bar)
+    //     })
+    //     child.bar = 1
+    // </script>
+    <script>
+        // 简单diff 双循环的方法，先新后旧 
+        // 什么情况要移动？如果第一个新vnode去旧vnode找相同key,旧vnode的索引值是3，设置lastIndex为3，而第二个新vnode去找索引值比lastIndex小就需要移动，而更大则不需要移动
+        //  怎么移动？找需要移动的新vnode的前一个vnode的el的后一个兄弟，并把需要移动的vnode的el放在那个兄弟的前面。
+        // 找不到的情况，分为删除和新增,删除就在双循环后遍历旧vnode数组，如果有在新vnode找不到的就需要卸载。
+        // 在双循环中循环旧vnode数组都没有找到则需要新增，设置一个find，没找到find还是false,新增在那个地方？和移动一样找找到前一个vode然后挂在到指定兄弟前面
+        // 双端diff算法
+        //  新旧vnode分别有头尾指针进行两两比较 同为头部或者尾部只需要打补丁而头尾相同key需要移动和打补丁，这种情况打补丁的两个需要移动指针
+        // 有非理想的时候，两两比较都不能找到相同key，遍历旧节点数组看能不能找到头部新vnode的key，找到了就打补丁然后移到旧头部vnode，再把找到的旧index的值设置为undefined到时候跳过
+        // 这种情况只有新头部vnode才移动指针,如果没有找到则说明是新增，新增在旧头部vnode的前面，旧头部vnode的指针不变
+        // 循环结束新vnode数组还有vnode遗留说明需要挂载，同时循环结束旧vnode数组还有遗留vnode，需要卸载
+
+        // 快速diff算法
+        // 先处理相同的前置和后置元素 需要一个j同时指向两组子节点的头部，以及两个变量指向两个数组的尾部,分别去处理，如果有相同的就移动
+        // 
+        // 前缀和后缀都没有相同的key,判断新旧节点数组有没有遗留，新节点数组有遗留就说明要挂载,旧节点数组有遗留就卸载
+        // 构造一个数组 source,然后source填充的值是在旧vnode数组的index，一开始是利用双循环去查找key填充source
+        //这种效率低，采用索引表，字段是key的值，而值是在新vnode数组的index，然后循环旧节点数组，如果key在索引表中能够找到就说明有相同的key
+        // 没有找到就卸载找到了就打补丁填充source
+        //如何判断是否需要移动 增加两个变量 moved pos,判断要不要移动和简单diff算法一样，如果找到的index小于pos就说明需要移动。
+        // 需要有一个表示，代表更新的节点的数量如果超过这个数量就需要卸载,
+        // 通过source得出最长递增子序列，而子序列数组的值都是新节点的index，则代表这些新节点不需要移动
+        // 分别两个指针指向递增子序列的最后一个元素和新子节点的最后一个元素,如果不相等就需要移动，相同就只需要移动指针,还有一种情况
+        // 如果source一项是-1则说明需要挂载而不是移动。挂载和移动类似。
+
+        // keepalive
+        // 组件默认会缓存keepalive包裹的组件，这个组件卸载的时候并不会被真正卸载，而是移动到一个隐藏的容器中，
+        // 已经被缓存的组件不会重新渲染挂载组件，而是重新把它移动到容器中激活组件,同时可以include 和 exclude自定义要缓存的组件和不缓存的组件
+        // 还可以设置一个缓存上限这样就不会占用大量内存，利用lru算法，超过缓存最大容量就会把最久未使用组件缓存删除，把最近访问的组件放到第一位
+        
+        // teleport 如果要在一个层级z-index很低的组件上展示弹窗，给弹窗设置再大的z-index也还是被其他覆盖。所以要用到teleport组件给弹窗放到body等元素上显示
+        // 为了treeshaking 自主控制渲染，并且to属性改变需要移动到更新的地方
+        
+        ///  Transition组件在特定的时机添加或移除指定class类,挂载前 设置初始状态：添加 enter-from 和 enter-active 类型，
+        // 挂载后 设置结束状态：移除 enter-from 类，添加 enter-to 类,记得要用requestAnimationFrame到下一帧执行
+        // 卸载 等待过渡结束后再执行 performRemove 函数完成卸载
+        function createRenderer(options) {
+            // 通过 options 得到操作 DOM 的 API
+            const {
+                createElement,
+                insert,
+                setElementText,
+                patchProps
+            } = options
+            function patch(n1, n2, container) {
+                // 如果 n1 不存在，意味着挂载，则调用 mountElement 函数完成挂载
+                if (!n1) {
+                    mountElement(n2, container)
+                } else {
+                    // n1 存在，意味着打补丁，暂时省略
+                }
+            }
+            function mountElement(vnode, container) {
+                const el = createElement(vnode.type)
+                if (typeof vnode.children === 'string') {
+                    setElementText(el, vnode.children)
+                } else if (Array.isArray(vnode.children)) {
+                    // 如果 children 是数组，则遍历每一个子节点，并调用 patch 函数挂载它们
+                    vnode.children.forEach(child => {
+                        patch(null, child, el)
+                    })
+                }
+                // 如果 vnode.props 存在才处理它
+                if (vnode.props) {
+                    // 遍历 vnode.props
+                    for (const key in vnode.props) {
+                        // 调用 setAttribute 将属性设置到元素上
+                        patchProps(el, key, null, vnode.props[key])
+                    }
+                }
+                insert(el, container)
+            }
+            function render(vnode, container) {
+                if (vnode) {
+                    // 新 vnode 存在，将其与旧 vnode 一起传递给 patch 函数，进行打补丁
+                    patch(container._vnode, vnode, container)
+                } else {
+                    if (container._vnode) {
+                        // 旧 vnode 存在，且新 vnode 不存在，说明是卸载（unmount）操作
+                        // 只需要将 container 内的 DOM 清空即可
+                        container.innerHTML = ''
+                    }
+                }
+                // 把 vnode 存储到 container._vnode 下，即后续渲染中的旧 vnode
+                container._vnode = vnode
+            }
+
+            return {
+                render
+            }
+        }
+        function shouldSetAsProps(el, key, value) {
+            // 特殊处理
+            if (key === 'form' && el.tagName === 'INPUT') return false
+            // 兜底
+            return key in el
+
+        }
+        // 在创建 renderer 时传入配置项
+        const renderer = createRenderer({
+            // 用于创建元素
+            createElement(tag) {
+                return document.createElement(tag)
+            },
+            // 用于设置元素的文本节点
+            setElementText(el, text) {
+                el.textContent = text
+            },
+            // 用于在给定的 parent 下添加指定元素
+            insert(el, parent, anchor = null) {
+                parent.insertBefore(el, anchor)
+            },
+            patchProps(el, key, prevValue, nextValue) {
+                if (shouldSetAsProps(el, key, nextValue)) {
+                    const type = typeof el[key]
+                    if (type === 'boolean' && nextValue === '') {
+                        el[key] = true
+                    } else {
+                        el[key] = nextValue
+                    }
+                } else {
+                    el.setAttribute(key, nextValue)
+                }
+            }
+        })
+    </script>
+    <script>
+        /// 编译优化
+        /// 传统的diff算法是一层层对比，会有很多无意义的对比操作，如果能够跳过这些操作性能会有大幅提升
+        /// 静态标记
+        // 通过编译可以标记哪些节点是静态的那些是动态的，增加patchFlag属性，那么代表它是动态节点，
+        /// 把动态节点提取出来放到dynamicChildren数组中，而有dynamicChildren属性的节点又被叫做Block节点
+        /// 根节点和v-if v-for这些节点是被当做Block节点
+        // 在补丁子数组的时候如果有dynamicChildren就直接更新动态节点，而不用一一对比
+        /// 静态提升
+        /// 把静态节点提升到渲染函数之外，在render使用静态节点的引用这样就不用每一次创建虚拟节点，减少性能开销
+        /// 预字符串化
+        /// 当有类似于20个p标签的时候可以把20个p标签拼接成一个字符串，而不用一个个创建虚拟节点，减少性能开销，减少内存占用
+        /// 缓存内联事件处理函数
+    </script>
+</body>
+
+</html>

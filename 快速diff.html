@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script src="https://unpkg.com/@vue/reactivity@3.0.5/dist/reactivity.global
+.js"></script>
+  <script>
+    function lis(arr) {
+      const p = arr.slice(); //  保存原始数据
+      const result = [0]; //  存储最长增长子序列的索引数组
+      let i, j, u, v, c;
+      const len = arr.length;
+      for (i = 0; i < len; i++) {
+        const arrI = arr[i];
+        if (arrI !== 0) {
+          j = result[result.length - 1]; //  j是子序列索引最后一项
+          if (arr[j] < arrI) {
+            //  如果arr[i] > arr[j], 当前值比最后一项还大，可以直接push到索引数组(result)中去
+            p[i] = j; //  p记录第i个位置的索引变为j
+            result.push(i);
+            continue;
+          }
+          u = 0; //  数组的第一项
+          v = result.length - 1; //  数组的最后一项
+          while (u < v) {
+            //  如果arrI <= arr[j] 通过二分查找，将i插入到result对应位置；u和v相等时循环停止
+            c = ((u + v) / 2) | 0; //  二分查找
+            if (arr[result[c]] < arrI) {
+              u = c + 1; //  移动u
+            } else {
+              v = c; //  中间的位置大于等于i,v=c
+            }
+          }
+          if (arrI < arr[result[u]]) {
+            if (u > 0) {
+              p[i] = result[u - 1]; //  记录修改的索引
+            }
+            result[u] = i; //  更新索引数组(result)
+          }
+        }
+      }
+      
+      u = result.length;
+      v = result[u - 1];
+      //把u值赋给result
+      while (u-- > 0) {
+        //  最后通过p数组对result数组进行进行修订，取得正确的索引
+        result[u] = v;
+        v = p[v];
+      }
+      return result;
+    }
+    function getSequence(arr){
+      const  p = arr.slice();
+      const result = [0];
+      const len = arr.length;
+      let i,j,c,u,v;
+      for(i = 0; i < len; i++){
+        const arrI = arr[i];
+        if(arrI !== 0){
+          j = result[result.length - 1];
+          if(arr[j] < arrI){
+            p[i] = j;
+            result.push(i);
+            continue;
+          }
+          u = 0,v = result.length - 1;
+          while(u < v){
+            c = ((u + v) / 2) | 0;
+            if(arr[result[c]] < arrI){
+             u = c + 1;
+            }else {
+              v = c;
+            }
+          }
+         console.log(c,u)
+          if(arrI < arr[result[u]]){
+            if(u > 0){
+              p[i] = result[u - 1]
+            }
+            result[u] = i
+          }
+        }
+     
+      }
+     console.log(result)
+      u = result.length;
+      v = result[result.length - 1];
+      while(--u > 0){
+        result[u] = v;
+        v = p[v];
+      }
+      return result
+    }
+console.log(getSequence([5,2,6,3,10,12]))
+console.log( ((11 + 8) / 2) | 0)
+//  const newVNode = {
+//       type: 'div',
+//       children: [
+//         { type: 'p', children: 'world', key: 3 },
+//         { type: 'p', children: '1', key: 1 },
+//         { type: 'p', children: '4', key: 4, },
+//       ]
+//     }
+
+//     const oldVNode = {
+//       type: 'div',
+//       children: [
+//         { type: 'p', children: '3', key: 3 },
+//         { type: 'p', children: '2', key: 2 },
+//         { type: 'p', children: '4', key: 4 },
+//       ]
+//     }
+
+ 
+    const { effect, ref } = VueReactivity;
+    const count = ref(1);
+    const Text = Symbol();
+    const Comment = Symbol();
+    const Fragment = Symbol()
+    function createRenderer(options) {
+      // 通过 options 得到操作 DOM 的 API
+      const { createElement, insert, setElementText, patchProps, createText, setText } = options
+      function unmount(vnode) {
+        if (vnode.type === Fragment) {
+          vnode.children.forEach(child => unmount(child))
+          return;
+        }
+        const parent = vnode.el.parentNode;
+        if (parent) {
+          parent.removeChild(vnode.el);
+        }
+      }
+      // 在这个作用域内定义的函数都可以访问那些 API
+      function mountElement(vnode, container, anchor) {
+
+        const el = vnode.el = createElement(vnode.type);
+        if (typeof vnode.children == 'string') {
+          setElementText(el, vnode.children)
+        } else if (Array.isArray(vnode.children)) {
+          vnode.children.forEach(child => {
+            patch(null, child, el)
+          })
+        }
+        if (vnode.props) {
+
+          for (const key in vnode.props) {
+            patchProps(el, key, null, vnode.props[key])
+          }
+        }
+        insert(el, container, anchor)
+      }
+      function patchElement(n1, n2) {
+        const el = n2.el = n1.el;
+        const oldProps = n1.props;
+        const newProps = n2.props;
+        for (const key in newProps) {
+          if (oldProps[key] !== newProps[key]) {
+            patchProps(el, key, oldProps[key], newProps[key])
+          }
+        }
+        for (const key in oldProps) {
+          if (!(key in newProps)) {
+            patchProps(el, key, oldProps[key], null)
+          }
+        }
+        patchChildren(n1, n2, el)
+      }
+      function patchKeyedChildren(n1, n2, container) {
+        const newChildren = n2.children;
+        const oldChildren = n1.children;
+        let j = 0;
+        let oldVNode = oldChildren[j];
+        let newVNode = newChildren[j];
+        console.log(newVNode.key)
+        while (oldVNode.key === newVNode.key) {
+          patch(oldVNode, newVNode, container)
+          j++;
+          oldVNode = oldChildren[j];
+          newVNode = newChildren[j];
+          // 自己的添加处理
+          if(oldVNode === undefined || newVNode === undefined) break;
+        }
+        let oldEnd = oldChildren.length - 1;
+        let newEnd = newChildren.length - 1;
+        oldVNode = oldChildren[oldEnd];
+        newVNode = newChildren[newEnd];
+        while (oldVNode.key === newVNode.key) {
+          patch(oldVNode, newVNode, container)
+          oldEnd--;
+          newEnd--;
+          oldVNode = oldChildren[oldEnd];
+          newVNode = newChildren[newEnd];
+           // 自己的添加处理
+          if(oldVNode === undefined || newVNode === undefined) break;
+        }
+        console.log(oldEnd, newEnd, j)
+        if (j > oldEnd && newEnd >= j) {
+          const anchorIndex = newEnd + 1;
+          const anchor = anchorIndex < newChildren.length ? newChildren[anchorIndex].el : null;
+          while (j <= newEnd) {
+            patch(null, newChildren[j++], container, anchor)
+          }
+        } else if (j > newEnd && oldEnd >= j) {
+
+          while (j <= oldEnd) {
+            unmount(oldChildren[j++])
+          }
+        } else {
+          console.log(2213)
+          const count = newEnd - j + 1;
+          // source 数组存储的是新子节点在旧的一组子节点中的位置索引
+          const source = new Array(count);
+          source.fill(-1)
+          const oldStart = j;
+          const newStart = j;
+          // 用来存储新的一组节点，节点的 key 和节点位置索引之间的映射
+          const keyIndex = {};
+          // 自己修改，书上是false,如果出现打补丁位置并没有修改并且新的一组节点有新增节点，就因为move是false进不去添加那个新节点
+         //       children: [
+//         { type: 'p', children: '3', key: 3 },
+//         { type: 'p', children: '2', key: 2 },
+//         { type: 'p', children: '4', key: 4 },
+//       ]
+//       [  { type: 'p', children: 'world', key: 3 },
+//         { type: 'p', children: '1', key: 1 },
+//         { type: 'p', children: '4', key: 4, },]
+          let move = true;
+          let pos = 0;
+          for (let i = newStart; i <= newEnd; i++) {
+            keyIndex[newChildren[i].key] = i;
+          }
+          let patched = 0;
+          for (let i = oldStart; i <= oldEnd; i++) {
+            oldVNode = oldChildren[i];
+            const k = keyIndex[oldVNode.key];
+            if (patched < count) {
+              if (typeof k != 'undefined') {
+                newVNode = newChildren[k];
+                patch(oldVNode, newVNode, container);
+                patched++;
+                // 填充source数组
+                source[k - newStart] = i;
+
+              } else {
+                unmount(oldVNode)
+              }
+              if (k < pos) {
+                move = true
+              } else {
+                pos = k;
+              }
+            } else {
+              unmount(oldVNode)
+            }
+          }
+          console.log(move)
+          if (move) {
+            const seq = lis(source);
+            let s = seq.length - 1;
+            let i = count - 1;
+
+            for (i; i >= 0; i--) {
+              if (source[i] === -1) {
+                const pos = i + newStart;
+                const newVNode = newChildren[pos];
+                const nextPos = pos + 1;
+                const anchor = nextPos < newChildren.length ? newChildren[nextPos].el : null;
+                patch(null, newVNode, container, anchor)
+              } else if (seq[s] !== i) {
+                const pos = i + newStart;
+                const newVNode = newChildren[pos];
+                const nextPos = pos + 1;
+                const anchor = nextPos < newChildren.length ? newChildren[nextPos].el : null;
+                insert(newVNode.el, container, anchor)
+              } else {
+                s--;
+              }
+            }
+          }
+        }
+      }
+      function patchChildren(n1, n2, container) {
+        if (typeof n2.children === 'string') {
+          if (Array.isArray(n1.children)) {
+            n1.children.forEach(child => unmount(child))
+          }
+          setElementText(container, n2.children)
+        } else if (Array.isArray(n2.children)) {
+          if (Array.isArray(n1.children)) {
+
+            patchKeyedChildren(n1, n2, container)
+
+          } else {
+            setElementText(container, '')
+            n2.children.forEach(child => patch(null, child, container))
+          }
+        } else {
+          if (Array.isArray(n1.children)) {
+            n1.children.forEach(child => unmount(child))
+          } else if (typeof n1.children == 'string') {
+            setElementText(container, '')
+          }
+        }
+      }
+      function patch(n1, n2, container, anchor) {
+
+        if (n1 && n1.type != n2.type) {
+          unmount(n1);
+          n1 = null;
+        }
+        const { type } = n2;
+        if (typeof type === 'string') {
+          if (!n1) {
+            mountElement(n2, container, anchor);
+          } else {
+
+            patchElement(n1, n2)
+            // n1 存在，意味着打补丁，暂时省略
+          }
+        } else if (type === Text) {
+          if (!n1) {
+            const el = n2.el = createText(n2.children);
+            insert(el, container)
+          } else {
+            const el = n2.el = n1.el;
+            if (n2.children !== n1.children) {
+              setText(el, n2.children)
+            }
+          }
+        } else if (type === Comment) {
+          // 处理与文本节点类似 使用document.createComment函数
+        } else if (type === Fragment) {
+
+          if (!n1) {
+            n2.children.forEach(child => patch(null, child, container))
+          } else {
+            patchChildren(n1, n2, container)
+          }
+        }
+
+
+      }
+      function render(vnode, container) {
+        if (vnode) {
+
+          patch(container._vnode, vnode, container);
+        } else {
+          if (container._vnode) {
+            unmount(container._vnode)
+          }
+        }
+        container._vnode = vnode;
+      }
+      return {
+        render
+      }
+    }
+    // const vnode  = {
+    //     type: 'ul',
+    //  children: [
+    //  {
+    //  type: Fragment,
+    //  children: [
+    //  { type: 'li', children: '1' },
+    //  { type: 'li', children: '2' },
+    //  { type: 'li', children: '3' }
+    //  ]
+    //  }
+    //  ]
+    // 描述文本节点
+    //  type: Text,
+    //  children: '我是文本内容'
+    //   }
+    const bol = ref(false)
+
+
+    // 创建一个渲染器
+    const renderer = createRenderer({
+      createText(text) {
+        return document.createTextNode(text)
+      },
+      setText(el, text) {
+        el.nodeValue = text
+      },
+      createElement(tag) {
+
+        return document.createElement(tag);
+      },
+      setElementText(el, text) {
+
+        el.textContent = text;
+      },
+      insert(el, parent, anchor = null) {
+
+        parent.insertBefore(el, anchor);
+      },
+      patchProps(el, key, prevValue, nextValue) {
+        function shouldSetAsProps(el, key, value) {
+          if (key === 'form' && el.tagName === 'INPUT') return false;
+          return key in el
+        }
+
+        if (/^on/.test(key)) {
+
+          let invokers = el._vei || (el._vei = {});
+          let invoker = invokers[key];
+          const name = key.slice(2).toLowerCase();
+          if (nextValue) {
+            if (!invoker) {
+              invoker = el._vei[key] = (e) => {
+
+                if (e.timeStamp < invoker.attached) return;
+                if (Array.isArray(invoker.value)) {
+                  invoker.value.forEach(fn => fn(e))
+                } else {
+                  invoker.value(e);
+                }
+              }
+              invoker.value = nextValue;
+              invoker.attached = performance.now()
+              el.addEventListener(name, invoker)
+            } else {
+              invoker.value = nextValue;
+            }
+          } else if (invoker) {
+            el.removeEventListener(name, invoker)
+          }
+        } else if (shouldSetAsProps(el, key, nextValue)) {
+          const type = typeof el[key];
+          if (type == 'boolean' && nextValue === '') {
+            el[key] = true
+          } else {
+            el[key] = nextValue
+          }
+        } else {
+          el.setAttribute(key, nextValue)
+        }
+      }
+    });
+
+    const newVNode = {
+      type: 'div',
+      children: [
+        { type: 'p', children: 'world', key: 3 },
+      { type: 'p', children: '22', key:31 },
+       { type: 'p', children: '999111', key: 9},
+               { type: 'p', children: '101dasd010', key:10 },
+       { type: 'p', children: '11asdas111', key: 11},
+            { type: 'p', children: '88111', key:8 },
+      
+       { type: 'p', children: '2', key: 2 },
+         
+      ]
+    }
+
+    const oldVNode = {
+      type: 'div',
+      children: [
+
+        { type: 'p', children: '3', key: 3 },
+   { type: 'p', children: '2a2', key:21 },
+      { type: 'p', children: '88', key:8 },
+                { type: 'p', children: '101010', key:10 },
+      
+       { type: 'p', children: '999', key: 9},
+            
+       { type: 'p', children: '11111', key: 11},
+       { type: 'p', children: '2', key: 2 },
+
+       
+
+
+      ]
+    }
+
+
+    // 首次挂载
+    // renderer.render(oldVNode, document.querySelector('#app'))
+    // setTimeout(() => {
+    //   // 1 秒钟后更新
+    //   renderer.render(newVNode, document.querySelector('#app'))
+    // }, 1000);
+
+    // function normalizeClass(classes) {
+//   if(!Array.isArray(classes)) classes = [classes];
+//   return classes
+//     .map((cls) => {
+//       if (typeof cls === 'string') {
+//         return cls;
+//       }
+//       return Object.entries(cls)
+//         .filter(([key, val]) => val)
+//         .map(([key]) => key);
+//     })
+//     .flat()
+//     .join(' ');
+// }
+// // 示例调用
+// const classes1 ='foo arr';
+// console.log(normalizeClass(classes1));
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>计算机</title>
+    <style></style>
+  </head>
+  <body></body>
+
+  <script>
+    function animal(floor) {
+      this.floor = floor;
+      return {
+        suus: 1,
+      };
+    }
+    function newA(fn, ...arg) {
+      const obj = {};
+      Object.setPrototypeOf({}, fn.prototype);
+      const res = fn.call(obj, ...arg);
+      return typeof res == "object" ? res : obj;
+    }
+    console.log(newA(animal, "susu"));
+
+    const arr = [2, 3, 1, 33, 22, 64, 32, 6, 3, 84];
+    function sort(arr) {
+      let current;
+      let preIndex;
+      for (
+        let gap = Math.floor(arr.length / 2);
+        gap > 0;
+        gap = Math.floor(gap / 2)
+      ) {
+        for (let i = gap; i < arr.length; i++) {
+          current = arr[i];
+          preIndex = i - gap;
+          while (preIndex >= 0 && current < arr[preIndex]) {
+            arr[preIndex + gap] = arr[preIndex];
+            preIndex -= gap;
+          }
+          arr[preIndex + gap] = current;
+        }
+      }
+      return arr;
+    }
+    console.log(sort(arr));
+  </script>
+</html>
