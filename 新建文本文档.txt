@@ -158,7 +158,35 @@ cumulative layout shift 0.011
 
 mqtt,页面锁，vite插件
 
-
+onMounted(async () => { 
+      if (docuState.viewContent?.styleString) {
+        style.type = 'text/css';
+        // 添加CSS样式
+        style.innerHTML = docuState.viewContent?.styleString;
+        // 将style元素添加到body
+        document.body.appendChild(style);
+      }
+      eval(jsString ?? '');
+      // 如果配置了请求自定义报表就循环请求
+      // console.log(state.viewDataConfig)
+      if (state.viewDataConfig) {
+        for (let i in state.viewDataConfig) {
+          let item = state.viewDataConfig[i];
+          const data = await defHttp.get('/api/rehabilitation/hosp/CustomStatisticsReport/GetReportResultWithTitle', {
+            reportCode: item.reportCode,
+            queryParamsJson: { pageSize: 100 }
+          })
+          console.log(data)
+          state[item.assign] = data.data
+        }
+      }
+      state.init && state.init({ defHttp, dayjs });
+      const { code } = compile(docuState.viewContent!.htmlString);
+      
+      const renderFunction = new Function('Vue', code)(Vue);
+     
+      state.renderFunction = renderFunction;
+    });
 
 http://192.168.0.155:8077/api/rehabilitation/hosp/CustomStatisticsReport/GetConfigDetailByCode?reportCode=%E6%B5%8B%E8%AF%95%E5%AD%98%E5%82%A8%E8%BF%87%E7%A8%8B
 http://192.168.0.155:8077/api/rehabilitation/hosp/CustomStatisticsReport/GetReportResultWithTitle?reportCode=%E6%B5%8B%E8%AF%95%E5%AD%98%E5%82%A8%E8%BF%87%E7%A8%8B&queryParamsJson=%7B%22pageIndex%22%3A1%2C%22pageSize%22%3A50%7D
